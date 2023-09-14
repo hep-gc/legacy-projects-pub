@@ -1,0 +1,96 @@
+#!/usr/local/bin/python2.7
+
+import time
+import json
+import pika
+import sys
+import os
+import ConfigParser
+import logging
+import argparse
+
+config = None
+args = None
+
+def record_data():
+    ampq_host = config.get('defaults', 'ampq_host')
+    ampq_queue = config.get('defaults', 'ampq_queue')
+    condor_history = config.get('defaults', 'condor_history')   
+
+
+    # Collect data passed by Condor
+    history_file = None
+    try:
+        if args.history_file:
+            history_file = open(args.history_file, 'r')
+        else:
+            history_file = open(condor_history, 'r')
+    except Exception, e:
+        logging.critical("Error opening condor history file.\n%s" % (e))
+        sys.exit(1)
+
+    #Find the size of the history file and move to the end
+    if not args.parse_all and not args.history_file:
+        st_results = os.stat(condor_history)
+        st_size = st_results[6]
+        history_file.seek(st_size)
+        logging.info('Watching %s ...' % (condor_history))
+    else:
+        logging.info('Parsing entire condor history file.')
+
+    job_classad = [] 
+    connection = None
+    while 1:
+        where = history_file.tell()
+        line = history_file.readline()
+        if not line:
+            if connection != None:
+                connection.close()
+                logging.info('Connection to AMQP server closed.')
+            connection = None
+            if args.parse_all or args.history_file:
+                break
+            time.sleep(1)
+            history_file.seek(where)
+        else:
+            if line.startswith('*** Offset = ') and len(job_classad) != 0:
+                # Build accounting record
+                record = {'timestamp' : time.time(), 'classad' :  job_classad}
+
+                # Send record
+                # Connect to AMQP server if needed
+                if (connection is None) or (not connection.is_open):
+                    connection = pika.BlockingConnection(pika.ConnectionParameters(ampq_host))
+                    channel = connection.channel()
+                    channel.queue_declare(queue=ampq_queue, durable = True)
+                    logging.info('Connection to AMQP server opened.')
+
+                channel.basic_publish(exchange='', routing_key=ampq_queue, body = json.dumps(record), properties = pika.BasicProperties(delivery_mode = 2,))
+                
+                job_classad = []
+                logging.info('info about completed job published:\n%s' % (line))
+            else:
+                job_classad.append(line)
+    
+    return
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--parse-all', action='store_true', default=False,
+                        dest='parse_all',
+                        help='Parse the entire condor history file and exit.')
+    parser.add_argument('--history-file', dest='history_file', help='Parse the given history file and return, instead of the one specified in the config file.')
+    args = parser.parse_args()
+
+    logging.basicConfig(filename='/var/log/nep52accountant.log', level=logging.DEBUG, format='%(asctime)s %(message)s')
+
+    config = ConfigParser.ConfigParser()
+    try:
+        config.readfp(open('/etc/nep52accountant.config'))
+    except Exception, e:
+        logging.critical('Error reading configuration file.\n%s' % (e))
+        sys.exit(1)
+        
+    record_data()
+

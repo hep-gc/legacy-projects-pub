@@ -1,0 +1,236 @@
+{
+   "administrators" : [
+      {
+         "email" : "igable@uvic.ca",
+         "name" : "Ian Gable"
+      }
+   ],
+   "organizations" : [
+      {
+         "sites" : [
+            {
+               "hosts" : [
+                  {
+                     "addresses" : [
+                        "ps-latency.hepnetcanada.ca"
+                     ],
+                     "measurement_archives" : [
+                        {
+                           "read_url" : "http://ps-latency.hepnetcanada.ca:8085/perfSONAR_PS/services/pSB",
+                           "write_url" : "ps-latency.hepnetcanada.ca:8569",
+                           "type" : "perfsonarbuoy/owamp"
+                        },
+                        {
+                           "read_url" : "http://ps-latency.hepnetcanada.ca:8086/perfSONAR_PS/services/traceroute_ma",
+                           "write_url" : "http://ps-latency.hepnetcanada.ca:8086/perfSONAR_PS/services/tracerouteCollector",
+                           "type" : "traceroute"
+                        },
+                        {
+                           "read_url" : "http://ps-latency.hepnetcanada.ca:8075/perfSONAR_PS/services/pinger/ma",
+                           "type" : "pinger"
+                        }
+                     ],
+                     "description" : "CA-VICTORIA-WESTGRID-T2"
+                  },
+                  {
+                     "addresses" : [
+                        "ps-bandwidth.hepnetcanada.ca"
+                     ],
+                     "measurement_archives" : [
+                        {
+                           "read_url" : "http://ps-bandwidth.hepnetcanada.ca:8085/perfSONAR_PS/services/pSB",
+                           "write_url" : "ps-bandwidth.hepnetcanada.ca:8570",
+                           "type" : "perfsonarbuoy/bwctl"
+                        }
+                     ],
+                     "description" : "CA-VICTORIA-WESTGRID-T2"
+                  }
+               ],
+               "description" : "CA-VICTORIA-WESTGRID-T2"
+            }
+         ],
+         "description" : "CA-VICTORIA-WESTGRID-T2"
+      },
+      {
+         "sites" : [
+            {
+               "hosts" : [
+                  {
+                     "addresses" : [
+                        "ps-latency.sfu.westgrid.ca"
+                     ],
+                     "measurement_archives" : [
+                        {
+                           "read_url" : "http://ps-latency.sfu.westgrid.ca:8085/perfSONAR_PS/services/pSB",
+                           "write_url" : "ps-latency.sfu.westgrid.ca:8569",
+                           "type" : "perfsonarbuoy/owamp"
+                        },
+                        {
+                           "read_url" : "http://ps-latency.sfu.westgrid.ca:8086/perfSONAR_PS/services/traceroute_ma",
+                           "write_url" : "http://ps-latency.sfu.westgrid.ca:8086/perfSONAR_PS/services/tracerouteCollector",
+                           "type" : "traceroute"
+                        },
+                        {
+                           "read_url" : "http://ps-latency.sfu.westgrid.ca:8075/perfSONAR_PS/services/pinger/ma",
+                           "type" : "pinger"
+                        }
+                     ],
+                     "description" : "CA-SFU-LCG2"
+                  },
+                  {
+                     "addresses" : [
+                        "ps-bandwidth.sfu.westgrid.ca"
+                     ],
+                     "measurement_archives" : [
+                        {
+                           "read_url" : "http://ps-bandwidth.sfu.westgrid.ca:8085/perfSONAR_PS/services/pSB",
+                           "write_url" : "ps-bandwidth.sfu.westgrid.ca:8570",
+                           "type" : "perfsonarbuoy/bwctl"
+                        }
+                     ],
+                     "description" : "CA-SFU-LCG2"
+                  }
+               ],
+               "description" : "CA-SFU-LCG2"
+            }
+         ],
+         "description" : "CA-SFU-LCG2"
+      },
+      {
+         "sites" : [
+            {
+               "hosts" : [
+                  {
+                     "addresses" : [
+                        "ps-latency.scinet.utoronto.ca"
+                     ],
+                     "measurement_archives" : [
+                        {
+                           "read_url" : "http://ps-latency.scinet.utoronto.ca:8085/perfSONAR_PS/services/pSB",
+                           "write_url" : "ps-latency.scinet.utoronto.ca:8569",
+                           "type" : "perfsonarbuoy/owamp"
+                        },
+                        {
+                           "read_url" : "http://ps-latency.scinet.utoronto.ca:8086/perfSONAR_PS/services/traceroute_ma",
+                           "write_url" : "http://ps-latency.scinet.utoronto.ca:8086/perfSONAR_PS/services/tracerouteCollector",
+                           "type" : "traceroute"
+                        },
+                        {
+                           "read_url" : "http://ps-latency.scinet.utoronto.ca:8075/perfSONAR_PS/services/pinger/ma",
+                           "type" : "pinger"
+                        }
+                     ],
+                     "description" : "CA-SCINET-T2"
+                  },
+                  {
+                     "addresses" : [
+                        "ps-bandwidth.scinet.utoronto.ca"
+                     ],
+                     "measurement_archives" : [
+                        {
+                           "read_url" : "http://ps-bandwidth.scinet.utoronto.ca:8085/perfSONAR_PS/services/pSB",
+                           "write_url" : "ps-bandwidth.scinet.utoronto.ca:8570",
+                           "type" : "perfsonarbuoy/bwctl"
+                        }
+                     ],
+                     "description" : "CA-SCINET-T2"
+                  }
+               ],
+               "description" : "CA-SCINET-T2"
+            }
+         ],
+         "description" : "CA-SCINET-T2"
+      },
+      {
+         "sites" : [
+            {
+               "hosts" : [
+                  {
+                     "addresses" : [
+                        "ps-latency.clumeq.mcgill.ca"
+                     ],
+                     "measurement_archives" : [
+                        {
+                           "read_url" : "http://ps-latency.clumeq.mcgill.ca:8085/perfSONAR_PS/services/pSB",
+                           "write_url" : "ps-latency.clumeq.mcgill.ca:8569",
+                           "type" : "perfsonarbuoy/owamp"
+                        },
+                        {
+                           "read_url" : "http://ps-latency.clumeq.mcgill.ca:8086/perfSONAR_PS/services/traceroute_ma",
+                           "write_url" : "http://ps-latency.clumeq.mcgill.ca:8086/perfSONAR_PS/services/tracerouteCollector",
+                           "type" : "traceroute"
+                        },
+                        {
+                           "read_url" : "http://ps-latency.clumeq.mcgill.ca:8075/perfSONAR_PS/services/pinger/ma",
+                           "type" : "pinger"
+                        }
+                     ],
+                     "description" : "CA-MCGILL-CLUMEQ-T2"
+                  },
+                  {
+                     "addresses" : [
+                        "ps-bandwidth.clumeq.mcgill.ca"
+                     ],
+                     "measurement_archives" : [
+                        {
+                           "read_url" : "http://ps-bandwidth.clumeq.mcgill.ca:8085/perfSONAR_PS/services/pSB",
+                           "write_url" : "ps-bandwidth.clumeq.mcgill.ca:8570",
+                           "type" : "perfsonarbuoy/bwctl"
+                        }
+                     ],
+                     "description" : "CA-MCGILL-CLUMEQ-T2"
+                  }
+               ],
+               "description" : "CA-MCGILL-CLUMEQ-T2"
+            }
+         ],
+         "description" : "CA-MCGILL-CLUMEQ-T2"
+      },
+      {
+         "sites" : [
+            {
+               "hosts" : [
+                  {
+                     "addresses" : [
+                        "ps-latency.atlas.unimelb.edu.au"
+                     ],
+                     "measurement_archives" : [
+                        {
+                           "read_url" : "http://ps-latency.atlas.unimelb.edu.au:8085/perfSONAR_PS/services/pSB",
+                           "write_url" : "ps-latency.atlas.unimelb.edu.au:8569",
+                           "type" : "perfsonarbuoy/owamp"
+                        },
+                        {
+                           "read_url" : "http://ps-latency.atlas.unimelb.edu.au:8086/perfSONAR_PS/services/traceroute_ma",
+                           "write_url" : "http://ps-latency.atlas.unimelb.edu.au:8086/perfSONAR_PS/services/tracerouteCollector",
+                           "type" : "traceroute"
+                        },
+                        {
+                           "read_url" : "http://ps-latency.atlas.unimelb.edu.au:8075/perfSONAR_PS/services/pinger/ma",
+                           "type" : "pinger"
+                        }
+                     ],
+                     "description" : "Australia-ATLAS"
+                  },
+                  {
+                     "addresses" : [
+                        "ps-bandwidth.atlas.unimelb.edu.au"
+                     ],
+                     "measurement_archives" : [
+                        {
+                           "read_url" : "http://ps-bandwidth.atlas.unimelb.edu.au:8085/perfSONAR_PS/services/pSB",
+                           "write_url" : "ps-bandwidth.atlas.unimelb.edu.au:8570",
+                           "type" : "perfsonarbuoy/bwctl"
+                        }
+                     ],
+                     "description" : "Australia-ATLAS"
+                  }
+               ],
+               "description" : "Australia-ATLAS"
+            }
+         ],
+         "description" : "Australia-ATLAS"
+      }
+   ],
+   "description" : "CA sites"
+}

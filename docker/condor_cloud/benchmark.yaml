@@ -1,0 +1,58 @@
+#cloud-config
+merge_type: 'list(append)+dict(recurse_array)+str()'
+
+write_files:
+-   content: |
+        #!/bin/bash
+        export BMK_ROOTDIR=/cvmfs/atlas.cern.ch/repo/benchmarks/cern/current
+        /cvmfs/atlas.cern.ch/repo/benchmarks/cern/current/cern-benchmark --benchmarks="fastBmk;whetstone" -q -o >/tmp/benchmarks.log
+
+    owner: root:root
+    path: /usr/local/sbin/HEPbm
+    permissions: '0700'
+-   content: |
+        #!/bin/bash
+        central_manager=$(cat /etc/condor/central_manager)
+        defunct=$(ps -ef | grep '\[java\] <defunct>' | grep -v grep | wc -l)
+        hostname=$(hostname -s)
+        vmtype=$(awk '/^VMType/ {split($0,w,"\""); print w[2]}' /etc/condor/condor_config.local)
+        utc=$(date +%s)
+        boot=$(stat -c %Y /proc)
+        uptime=$(awk '{print $1}' /proc/uptime)
+        cores=$(grep -c ^processor /proc/cpuinfo)
+        benchmarks=$(awk '/MWIPS/ {w=$1} /^Fast/ {f=$4} END{print  "fastBmk=" f ",whetstone=" w}' /tmp/benchmarks.log)
+        str="central_manager=$central_manager,defunct=$defunct,host=$hostname,vmtype=$vmtype,cores=$cores,utc=$utc,boot=$boot,uptime=$uptime,$benchmarks"
+
+        norm=`getconf CLK_TCK`
+        names=( user nice system idle iowait irq softirq steal guest guest_nice )
+
+        total=0
+        n=0
+        for i in $(head -1 /proc/stat | cut -c 4-) 
+        do
+            t=$(expr $i / $norm)
+            #    echo ${names[$n]}  $t
+            str="$str,${names[$n]}=$t"
+            total=$(($total+$t))
+            (( n++ ))
+        done
+
+        # echo 'Total' $total
+        str="$str,Total=$total"
+
+        uptime=$(awk '{print $1}' /proc/uptime)
+        # echo 'uptime' $uptime
+
+        curl "vmrepo.heprc.uvic.ca?$str" >/dev/null 2>&1
+    owner: root:root
+    path: /usr/local/sbin/HEPbmTimes
+    permissions: '0700'
+-   content: |
+        */15 * * * * root /usr/local/sbin/HEPbmTimes
+    owner: root:root
+    path: /etc/cron.d/HEPbmTimes
+    permissions: '0644'
+
+runcmd:
+ - [ /usr/local/sbin/HEPbm ]
+ - [ /usr/local/sbin/HEPbmTimes ]

@@ -1,0 +1,7 @@
+#
+# cron-job to refresh the statistics activity cache.
+#
+
+MAILTO=
+
+10 * * * *     root test -x /opt/PyramidContainers/VirtualEnvironment-Python-2.6/Munin-Collector/munincollector/utilities/munin-collector-pickle-statistics-activity && /opt/PyramidContainers/VirtualEnvironment-Python-2.6/Munin-Collector/munincollector/utilities/munin-collector-pickle-statistics-activity

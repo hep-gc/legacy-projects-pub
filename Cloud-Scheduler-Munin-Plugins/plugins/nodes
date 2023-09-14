@@ -1,0 +1,13 @@
+#!/bin/sh
+
+if [ "$1" = "config" ]; then
+
+	echo 'graph_title Condor Nodes'
+        echo 'graph_category Cloud'
+	echo 'graph_vlabel nodes'
+	echo 'nodes.label nodes'
+	exit 0
+fi
+
+echo -n "nodes.value "
+condor_status -total | grep Total | grep -v Backfill | awk '{print $2}'

@@ -1,0 +1,32 @@
+#!/bin/sh
+#
+# NB: This must be run under account with appropriate grid proxy certificates; see ../etc/plugin-config.d/condor_jobs_uvic
+#
+PATH=/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin:/usr/local/sbin
+
+if [ "$1" = "config" ]; then
+
+echo 'graph_title Condor Jobs'
+        echo 'graph_category Cloud'
+echo 'graph_vlabel Jobs'
+echo 'graph_width 800'
+echo 'graph_height 500'
+echo 'graph_order all queued held running'
+echo 'all.label All Jobs'
+echo 'all.draw AREA'
+echo 'all.colour cccccc'
+echo 'running.label Running Jobs'
+echo 'queued.label Queued Jobs'
+echo 'held.label Held Jobs'
+exit 0
+fi
+
+#                                                    1   2   3     4      5        6 7   8    9   10    11  12  13    14   
+# $CondorVersion: 7.8.0 May 08 2012, sample output: 76 jobs; 0 completed, 0 removed, 0 idle, 76 running, 0 held, 0 suspended
+col_all=1
+col_completed=5
+col_queued=7
+col_running=9
+col_held=11
+
+condor_q | /bin/awk '/running/ {print "running.value " $'$col_running' "\nqueued.value " $'$col_queued' "\nheld.value " $'$col_held' "\nall.value " $'$col_all'}'

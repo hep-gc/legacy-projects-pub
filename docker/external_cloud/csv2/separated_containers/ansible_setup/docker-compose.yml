@@ -1,0 +1,43 @@
+version: "2"
+services:
+  condor:
+    build: condor
+    image: condor
+    ports: 
+      - "9618:9618"
+      - "40000-40500:40000-40500"
+    hostname: condor_host
+    privileged: true
+    tty: true
+    stdin_open: true
+    networks:
+      cs_net:
+        ipv4_address: 172.28.5.2
+
+  cloud_scheduler:
+    build: cloud_scheduler
+    image: cloud_scheduler
+    ports:
+      - "947:947"
+      - "443:443"
+      - "444:444"
+      - "3306:3306"
+      - "80:80"
+    hostname: csv2_host
+    privileged: true
+    tty: true
+    stdin_open: true
+    networks:
+      cs_net:
+        ipv4_address: 172.28.5.1
+
+networks:
+  cs_net:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+      - subnet: 172.28.0.0/16
+
+
+

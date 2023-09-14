@@ -1,0 +1,38 @@
+#!/bin/bash
+
+DEFAULTCLOUD=example.cloud
+
+# By default, we assume this will be installed in the cloud-client
+# bin directory. If it isn't you'll want to point to your cloud-client
+# install here.
+WORKSPACE=$(cd `dirname $0` && echo `pwd`/../lib/workspace.sh)
+#WORKSPACE=/path/to/workspace.sh
+
+usage="Usage: `basename $0` cloud.host.name VMID"
+
+if [ $# -lt 1 ] || [ "$1" = "-h" ] || [ "$1" = "--help" ] ; then
+    echo $usage
+    exit 1
+elif [ $# -lt 2 ]; then
+	HOST=$DEFAULTCLOUD
+	ID=$1
+else
+	HOST=$1
+	ID=$2
+fi
+
+
+DATESTAMP=`date +%s` 
+EPRFILE=/tmp/nimbus.${DATESTAMP}.epr
+
+echo "<WORKSPACE_EPR xsi:type=\"ns1:EndpointReferenceType\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:ns1=\"http://schemas.xmlsoap.org/ws/2004/03/addressing\">
+ <ns1:Address xsi:type=\"ns1:AttributedURI\">https://$HOST/wsrf/services/WorkspaceService</ns1:Address>
+ <ns1:ReferenceProperties xsi:type=\"ns1:ReferencePropertiesType\">
+  <ns2:WorkspaceKey xmlns:ns2=\"http://www.globus.org/2008/06/workspace\">$ID</ns2:WorkspaceKey>
+ </ns1:ReferenceProperties>
+ <ns1:ReferenceParameters xsi:type=\"ns1:ReferenceParametersType\"/>
+</WORKSPACE_EPR>" > $EPRFILE
+$WORKSPACE -e $EPRFILE --shutdown
+test $? && echo "Sleeping 8 seconds to wait for shutdown" && sleep 8
+$WORKSPACE -e $EPRFILE --destroy
+rm $EPRFILE

@@ -1,0 +1,21 @@
+{% load staticfiles %}
+
+<html>
+<head>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+    <title>Spot Price Table</title>
+
+</head>
+<body>
+<table border=1>
+<tr><td>Region</td><td>Instance Type</td><td>Image Type</td><td>Zone</td><td>Price</td><td>Time Stamp</td></tr>
+{% for data in json_response_data %}
+	<tr>
+	<td>{{data.region}}</td><td>{{data.instance_type}}</td><td>{{data.image_type}}</td><td>{{data.zone}}</td><td>${{data.price}}</td><td>{{data.timestamp}}</td>
+	</tr>
+{% endfor %}
+</table>
+</body>
+
+</html>

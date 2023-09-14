@@ -1,0 +1,19 @@
+#!/bin/sh
+
+if [ "$1" = "config" ]; then
+
+	echo 'graph_title Condor Jobs'
+        echo 'graph_category Cloud'
+	echo 'graph_vlabel Jobs'
+	echo 'running.label Running Jobs'
+	echo 'queued.label Queued Jobs'
+	exit 0
+fi
+
+
+CONDOR_Q=`condor_q`
+
+echo -n "running.value "
+echo "$CONDOR_Q" | grep ' R ' | wc -l
+echo -n "queued.value "
+echo "$CONDOR_Q" | grep ' I ' | wc -l

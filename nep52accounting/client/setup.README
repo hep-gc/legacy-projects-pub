@@ -1,0 +1,3 @@
+Add the following line to your condor configuration file:
+
+NEP52ACNT_HOOK_JOB_EXIT = /usr/local/bin/nep52accountant

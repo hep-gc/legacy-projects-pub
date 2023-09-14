@@ -1,0 +1,29 @@
+# Local config for Cloud Scheduler
+CONDOR_HOST = $(FULL_HOSTNAME) 
+COLLECTOR_NAME = condor collector
+START = TRUE
+SUSPEND = FALSE
+PREEMPT = FALSE
+KILL = FALSE
+DAEMON_LIST = COLLECTOR, MASTER, NEGOTIATOR, SCHEDD
+TRUST_UID_DOMAIN = TRUE
+ALLOW_WRITE = *
+ALLOW_NEGOTIATOR = *
+ALLOW_NEGOTIATOR_SCHEDD = *
+
+COLLECTOR_SOCKET_CACHE_SIZE=10000
+COLLECTOR.MAX_FILE_DESCRIPTORS = 10000
+LOWPORT = 40000
+HIGHPORT = 40500
+ENABLE_SOAP = FALSE
+
+#This is needed for a container as it doesn't have sys admin capabilities
+DISCARD_SESSION_KEYRING_ON_STARTUP = FALSE
+
+#Network setting for getting 2 way communication with workers
+#CCB_HEARTBEAT_INTERVAL = 120
+#TCP_FORWARDING_HOST = dockercs.heprc.uvic.ca
+#SHARED_PORT_ARGS = -p 9618
+
+## Settings after this point have been set automatically. Don't change them
+## unless you're really sure you know what you're doing

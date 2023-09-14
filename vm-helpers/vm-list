@@ -1,0 +1,29 @@
+#!/bin/bash
+
+DEFAULTCLOUD=example.cloud
+
+# By default, we assume this will be installed in the cloud-client
+# bin directory. If it isn't you'll want to point to your cloud-client
+# install here.
+CLOUDCLIENT=$(cd `dirname $0` && echo `pwd`/../bin/cloud-client.sh)
+#CLOUDCLIENT=/path/to/cloud-client.sh
+
+usage="Usage: `basename $0` cloud.host.name"
+if [ "$1" = "-h" ] || [ "$1" = "--help" ] ; then
+    echo $usage
+elif [ $# -lt 1 ]; then
+    HOST=$DEFAULTCLOUD
+else
+	HOST=$1
+fi
+
+
+DATESTAMP=`date +%s` 
+
+CONFFILE=/tmp/vm-list.${DATESTAMP}.conf
+
+echo "
+vws.factory=${HOST}
+" > $CONFFILE
+$CLOUDCLIENT --conf $CONFFILE --status
+rm $CONFFILE

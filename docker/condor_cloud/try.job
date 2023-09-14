@@ -1,0 +1,25 @@
+Universe   = vanilla
+Executable = try.sh
+Arguments  = 4 10
+dir           = $ENV(HOME)/logs
+output        = $(dir)/$(Cluster).$(Process).out
+error         = $(dir)/$(Cluster).$(Process).err
+log           = $(dir)/$(Cluster).$(Process).log
+priority       = 10
+Requirements = VMType =?= "cloudscheduler-worker" && TARGET.Arch == "X86_64"
+should_transfer_files = YES
+when_to_transfer_output = ON_EXIT
+
++VMType = "cloudscheduler-worker"
++VMCPUArch = "X86_64"
++VMName = "cloudscheduler-worker"
++VMAMI = "centos6_condor"
++VMInstanceType = "m1.small"
+
++VMMaximumPrice = "0.10"
++VMAMIConfig = "/srv/userdata/benchmark.yaml:cloud-config,/srv/userdata/verifycs.yaml:cloud-config"
+#+VMAMIConfig = "/srv/userdata/benchmark.yaml:cloud-config,/srv/userdata/verifycs.yaml:cloud-config,/srv/userdata/cernvm-data.txt:ucernvm-config"
++VMInjectCA = False
++TargetClouds = "devstack"
+
+queue 1

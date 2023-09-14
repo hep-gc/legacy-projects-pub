@@ -1,0 +1,15 @@
+INFO:requests.packages.urllib3.connectionpool:Starting new HTTP connection (1): django-dev.heprc.uvic.ca
+DEBUG:requests.packages.urllib3.connectionpool:"POST /ec2_spot_price_monitor/spot_price/ HTTP/1.1" 200 None
+2014-04-03 16:44:38,991 Request Type current_spot_price
+2014-04-03 16:44:39,000 Starting new HTTP connection (1): django-dev.heprc.uvic.ca
+2014-04-03 16:49:00,309 Request Type current_spot_price
+2014-04-03 16:49:00,318 Starting new HTTP connection (1): django-dev.heprc.uvic.ca
+2014-04-03 16:49:00,762 {'other_args': {}, 'request': 'current_spot_price', 'response_type': 'json', 'filter_type': 'none', 'request_args': [{'ImageTypes': ['Linux/UNIX']}, {'InstanceTypes': ['m3.medium']}, {'Regions': ['us-west-2']}, {'ZONES': []}]}
+2014-04-03 16:49:55,643 Request Type current_spot_price
+2014-04-03 16:49:55,651 Starting new HTTP connection (1): django-dev.heprc.uvic.ca
+2014-04-04 09:43:23,150 Request Type current_spot_price
+2014-04-04 09:43:23,184 Starting new HTTP connection (1): django-dev.heprc.uvic.ca
+2014-04-04 09:43:31,474 Request Type current_spot_price
+2014-04-04 09:43:31,483 Starting new HTTP connection (1): django-dev.heprc.uvic.ca
+2014-04-04 09:43:46,941 Request Type current_spot_price
+2014-04-04 09:43:46,950 Starting new HTTP connection (1): django-dev.heprc.uvic.ca

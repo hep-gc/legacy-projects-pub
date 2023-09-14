@@ -1,0 +1,218 @@
+#!/usr/bin/perl
+	$ENV{'PATH'} = '/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin:/usr/local/sbin';
+
+#
+#	Make sure we can read the master configuration file.
+#
+	 if (!(-e '/etc/munin/munin.conf')) {
+		print "This command MUST be run on a munin master node. If this is a munin master node,\n";
+		print "mg is unable to find the /etc/munin/munin.conf configuration file.\n";
+		exit;
+	 }
+
+#
+#	Set parameter defaults.
+#
+	$tval = 0;			# default time
+	$rval = 0;			# default range
+	$fval = 0;			# default font size
+	$Fval = 0;			# default legend font size
+	$hval = '';			# no default host
+	$sval = '';			# no default service
+	$Hval = 600;		# default height
+	$Wval = 1200;		# default width
+	$Tval = '';			# No replacement graph title
+	$cval = 0;			# default copy flag
+	$nval = 0;			# default caption flag
+
+#
+#	Process command arguments.
+#
+	while (@ARGV) {
+		$key = shift();
+		$tval = abs(shift()) if $key eq '-t';
+		$rval = abs(shift()) if $key eq '-r';
+		$fval = abs(shift()) if $key eq '-f';
+		$Fval = abs(shift()) if $key eq '-F';
+		$hval = shift() if $key eq '-h';
+		$sval = shift() if $key eq '-s';
+		$Hval = shift() if $key eq '-H';
+		$Wval = shift() if $key eq '-W';
+		$Tval = shift() if $key eq '-T';
+		$cval = $cval ^ 1 if $key eq '-c';
+		$nval = $nval ^ 1 if $key eq '-n';
+	}
+
+#
+#	Print command help if mandtory parameters missing.
+#
+	if ($hval eq '' || $sval eq '') {
+		print "Generate and save a munin graph in '$ENV{'HOME'}/mg/current.png'.\n\n";
+		print "Synopsis: mg -h hostname -s service [-t timeinsec] [-r rangeinhrs | 30] [T title]\n";
+		print "              [-H height] [-W width] [-f fontsize] [-F fontsize] [-c] [-n]\n\n";
+		print "Parameters & Options:\n\n";
+		print "-h hostname   - Must be used to specify the fully qualified host name as declared by a\n";
+		print "                munin node. If omitted, these help messages are displayed. If invalid,\n";
+		print "                a list of valid host names is displayed.\n\n";
+		print "-s service    - Must be used to specify a valid service name. If omitted, these help\n";
+		print "                messages are displayed. If invalid, a list of valid service names is\n";
+		print "                displayed.\n\n";
+		print "-t timeinsec  - May be used to specify the start time specified as the number of seconds\n";
+		print "                offset from the Linux epoch. If omitted, the start time is calculated\n";
+		print "                by subtracting the range value from the current time.\n\n";
+		print "-r rangeinhrs - May be used to specify the number of hours to be plotted. If specified\n";
+		print "                and the time ('-t') parameter is omitted, the calculated time value will\n";
+		print "                displayed for use (cut/paste) in future command invocations. The default\n";
+		print "                value is 30 hours.\n\n";
+		print "-T title      - May be used to define a replacement title for the graph. If omitted, the\n";
+		print "                title defined by the munin plugin for the service is used.\n\n";
+		print "-H height     - May be used to specify the height of the graph in pixels. The default\n";
+		print "                value is defined by the munin plugin for the service being plotted.\n\n";
+		print "-W width      - May be used to specify the width of the graph in pixels. The default\n";
+		print "                value is defined by the munin plugin for the service being plotted.\n\n";
+		print "-f fontsize   - May be used to specify a numeric font size for titles and labels. The\n";
+		print "                default is defined by munin.\n\n";
+		print "-F fontsize   - May be used to specify a numeric font size for legends and comments. The\n";
+		print "                default is defined by munin.\n\n";
+		print "-c            - May be used to specify that a copy of the current graph be saved in\n";
+		print "                '$ENV{'HOME'}/mg/<hostname>-<service>-<timeinsec>-<rangeinhrs>-<height>x<width>.png'\n\n";
+		print "-n            - May be used to request no comments. This option minimizes the amount of\n";
+		print "                text at the bottom of the graph.\n";
+		exit;
+	}
+
+#
+#	Locate the munin master data directory via the master configuration file.
+#
+
+	 @x = `awk '/dbdir/' /etc/munin/munin.conf`;
+	 if ($#x>-1) {
+		@y = split(/[\s\n]+/, $x[0]);
+		$DBdir = $y[$#y];
+	 } else {
+		$DBdir = '/var/lib/munin';
+	 }
+
+#
+#	Retrieve and validate hosts and services.
+#
+	 @x = `awk 'BEGIN{FS=";"} {print \$2}' $DBdir/datafile`;
+	 for ($i=0; $i<=$#x; $i++) {
+		($host, $x) = split(/[:]/, $x[$i]);
+		$Hosts{$host} = 1 if $host =~ /[a-zA-Z0-9]/;
+		($service) = split(/[.]/, $x);
+		$Services{$service} = 1 if $service =~ /[a-zA-Z0-9]/;
+	 }
+
+	 if(!defined($Hosts{$hval})) {
+		print "Invalid hostname ($hval) value specified. Choose from one of the following:\n\n";
+		$Hosts = join(", ", sort(keys(%Hosts)));
+		print "$Hosts\n\n";
+		print "Not all combinations of hostname and service are valid.\n";
+		exit;
+	 }
+
+	 if(!defined($Services{$sval})) {
+		print "Invalid service ($sval) value specified. Choose from one of the following:\n\n";
+		$Services = join(", ", sort(keys(%Services)));
+		print "$Services\n\n";
+		print "Not all combinations of hostname and service are valid.\n";
+		exit;
+	 }
+
+#
+#	Finalize time range.
+#
+	$time = $tval * 1;
+	$range = $rval * 3600;
+
+	$now = `date +%s`;
+	$end = "'0'\\\n";
+	if ($time == 0 && $range == 0) {
+		$time = $now - (30 * 3600);
+		$range = 0;
+	} elsif ($time == 0) {
+		$time = $now - $range;
+		print "Base time set to: $time\n";
+		$range = 0;
+	} elsif ($range >= ($now - $time)) {
+		$range = 0;
+	}
+
+	$start = sprintf("'-%dh'\\\n", int(($now + 1800 - $time) / 3600));
+	$end = sprintf("'-%dh'\\\n", int(($now + 1800 - $time - $range) / 3600)) if $range > 0;
+
+#
+#	Establish output directory and configuration file.
+#
+	if (!(-e "$ENV{'HOME'}/mg/etc/munin.conf")) {
+		system("mkdir -p $ENV{'HOME'}/mg/etc");
+		open(CF, ">$ENV{'HOME'}/mg/etc/munin.conf");
+		printf CF "htmldir $ENV{'HOME'}/mg/etc\nlogdir $ENV{'HOME'}/mg/etc\nrundir $ENV{'HOME'}/mg/etc\n";
+		@x = `cat /etc/munin/munin.conf`;
+		for ($i=0; $i<=$#x; $i++) {
+			next if $x[$i] =~ /htmldir|logdir|rundir/;
+			printf CF $x[$i];
+		}
+		close(CF);
+	}
+
+#
+#	Run munin-graph. Retrieve and modify resulting rrdtool graph parameters.
+#
+	open(GP, ">>$ENV{'HOME'}/mg/etc/mg-parms") if $ENV{'DEBUG'};
+	$ended = 0;
+	@x = `/usr/share/munin/munin-graph --config $ENV{'HOME'}/mg/etc/munin.conf --nolazy --host $hval  --service $sval --noweek --nomonth --noyear --debug  2>&1 | awk '/\\\\/'`;
+	for ($i=0; $i<=$#x; $i++) {
+		chop($x[$i]);
+		chop($x[$i]) if $i < $#x;
+
+		$x[$i] = "'$Tval'\\\n" if $Tval ne '' && $x[$i] =~ s/ - by day//;
+		$x[$i] =~ s/ - by day//;
+		$x[$i] = "'$ENV{'HOME'}/mg/current.png'" if $x[$i] =~ /\.png/;
+		$x[$i+1] = $start if $x[$i] =~ /--start/;
+		if ($x[$i] =~ /--end/) {
+			$ended = 1;
+			if ($range == 0 ) {
+				$x[$i] = '';
+				$x[$i+1] = '';
+			} else {
+				$x[$i+1] = $end;
+			}
+		}
+		$x[$i+1] = "'$Hval'\\\n" if $x[$i] =~ /--height/;
+		$x[$i+1] = "'$Wval'\\\n" if $x[$i] =~ /--width/;
+
+		if ($nval) {
+#			$x[$i] = '' if $x[$i] =~ /COMMENT/ && $x[$i] !~ /Last update/;
+			$x[$i] = '' if $x[$i] =~ /COMMENT/;
+			$x[$i] = '' if $x[$i] =~ /GPRINT/;
+		}
+
+		$x[$i] =~ s/0/$fval/ if $fval>0 && $x[$i] =~ /DEFAULT:0:DejaVuSans/;
+		$x[$i] =~ s/7/$Fval/ if $Fval>0 && $x[$i] =~ /LEGEND:7:DejaVuSansMono/;
+
+		printf GP "$x[$i]\n" if $ENV{'DEBUG'} && $x[$i] =~/[a-zA-Z0-9]/;
+	}
+
+	if (!$ended && $range>0) {
+		$x[$#x+1] = "--end $end";
+		printf GP "$x[$#x]\n" if $ENV{'DEBUG'};
+	}
+	close(GP) if $ENV{'DEBUG'};
+
+#
+#	Run the modified rrdtool graph.
+#
+	$x = join(' ', @x);
+#	print "$x\n";
+	@x = `rm -f '$ENV{'HOME'}/mg/current.png'; $x`;
+
+#
+#	If requested, keep permanent copy of graph file.
+#
+	if ($cval) {
+		$x = $range / 3600;
+		$y = sprintf('%s-%s-%s-%s-%sx%s.png', $hval, $sval, $time, $x, $Hval, $Wval);
+		system("cd $ENV{'HOME'}/mg; cp -f current.png '$y'");
+	}

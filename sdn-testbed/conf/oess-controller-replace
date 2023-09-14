@@ -1,0 +1,12 @@
+# use the UVic oess controller
+# version "13.2-20131003_opus_exdc.1 [dc-builder]";
+protocols {
+    openflow {
+        switch SDNTestbed {
+            replace: controller {
+                address 206.12.154.73;
+            }
+        }
+    }
+}
+

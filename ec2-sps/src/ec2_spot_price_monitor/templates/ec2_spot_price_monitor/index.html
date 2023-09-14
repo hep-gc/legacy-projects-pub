@@ -1,0 +1,218 @@
+{% load staticfiles %}
+
+<!DOCTYPE html >
+<html >
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+    <title>3D Scatter Plot</title>
+
+<link rel="stylesheet" type="text/css" href="http://www.x3dom.org/download/dev/x3dom.css"/>
+<script type="text/javascript" src="{% static 'ec2_spot_price_monitor/js/utils.js' %}"></script>
+<script type="text/javascript" src="{% static 'ec2_spot_price_monitor/js/3d_scatter2.js' %}"></script>
+<script type="text/javascript" src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<script type="text/javascript" src="http://x3dom.org/x3dom/dist/x3dom-full.js"></script>
+<script>
+var test_zone = {
+{% for region,array in zones %}
+	'{{region}}':[
+	     {% for z in array %}
+	      '{{z}}',
+	     {% endfor %}
+	],
+{% endfor %}
+}
+
+function get_spot_price(){
+	console.log("get spot prices");
+	var utils = new HTTPUtils();
+	var http_obj = utils.CreateHttpObject();
+	
+	var images=[];
+	instances=[];
+	regions=[];
+	zones = [];
+	populate_list(images,"images");
+	populate_list(instances,"instances");
+	populate_list(regions,"regions");
+	populate_list(zones,"zones");
+	
+	//create json message
+	var json_fac = new JSONMessageFactory();
+	var jsonMsg = json_fac.createMessage(images,instances,regions,zones);
+	console.log(jsonMsg);
+	
+	//create call back
+	cb = function(evt){
+		console.log("got call back");
+		if(http_obj.readyState==4){
+			var objtabdata=http_obj.responseText;
+			console.log(objtabdata);
+			show_graph(JSON.parse(objtabdata));
+		}
+	}
+	
+	//send http post
+	utils.sendViaPOST(http_obj,"spot_price/",jsonMsg,cb);
+	
+}
+
+function populate_list(list,id){
+	se = document.getElementById(id);
+	seIdx = se.selectedIndex;
+	console.log("selected Index is "+seIdx);
+	if(seIdx!=-1){
+		value = se.options[seIdx].value;
+		if(value != "all"){
+			console.log("get selected");
+			list.push(value);
+		}else{
+			console.log("get all");
+			for(var i=1;i<se.length;i++){
+				list.push(se.options[i].value);
+			}
+		}
+	}else{
+		console.log("get none");
+	}
+	console.log(id+":"+list)
+}
+
+function showzones(region){
+	ze = document.getElementById("zones");
+	ze.innerHTML="";
+	
+	list = test_zone[region]
+	console.log("get regions"+region);
+	console.log("list "+list);
+	if (list && list.length>0){
+		op = document.createElement("option")
+		op.text = "all";
+		ze.appendChild(op);
+	}
+	
+	for (var zone in list){
+		op = document.createElement("option")
+		op.text = list[zone];
+		ze.appendChild(op);
+	}
+}
+
+function get_price(zone,instance,resp_data){
+	for (var idx in resp_data){
+	    var  obj = resp_data[idx];
+	    //console.log("obj "+obj.instance_type);
+	    if(obj.instance_type == instance && obj.zone == zone){
+	    	//console.log("found price "+zone+" "+instance+" "+obj.price);
+	    	return obj.price;
+	    }
+	}
+	return -1;
+}
+
+
+function show_graph(json_data){
+	req_arr = json_data.request_args;
+	//console.log("got array "+req_arr);
+	//determine Instance Types
+	for (var idx in req_arr){
+	    var  obj = req_arr[idx];
+	    //console.log("obj "+obj);
+		for(var key in obj){
+		    //console.log("found key "+key);
+			if(key == "InstanceTypes"){
+			    //console.log("found array "+obj.InstanceTypes);
+				z_axis_data = obj.InstanceTypes;
+			}
+		}
+	}
+	
+	//determine Regions
+	regions=[]
+	resp_data = json_data.response_data
+	for (var idx in resp_data){
+	    var  obj = resp_data[idx];
+	    //console.log("obj "+obj);
+		var zone = obj.zone;
+		//console.log("found zone "+zone);
+		if(regions.indexOf(zone) == -1){
+			regions.push(zone);
+		}
+	}
+	x_axis_data = regions;
+	
+	//prepare data
+	price_data = [x_axis_data.length]
+	for (var i=0;i<x_axis_data.length;i++){
+		price_data[x_axis_data[i]]= [z_axis_data.length];
+		for(var j=0;j<z_axis_data.length;j++){
+			console.log("inserting "+x_axis_data[i]+" "+z_axis_data[j]+" num "+get_price(x_axis_data[i],z_axis_data[j],resp_data));
+			price_data[x_axis_data[i]][z_axis_data[j]]=get_price(x_axis_data[i],z_axis_data[j],resp_data);
+		}
+	}
+	console.log("json "+price_data);
+	
+    axis_range = 3;
+	total_range= 3;
+	
+	y_axis_data = ['0.0000','0.01110','0.02']
+	axis_data = [x_axis_data,y_axis_data,z_axis_data]
+    scene_ref = new scatterPlot3d( d3.select('#chart') );
+    scene_ref.updateData(price_data);
+}
+
+var axis_range = 2;
+var total_range= 2;
+var x_axis_data = ['blash']
+var z_axis_data = ['yeh']
+var y_axis_data = ['0.0000','0.0050','0.01','0.015','0.020','0.025']
+var axis_data = [x_axis_data,y_axis_data,z_axis_data]
+var axis_titles = ["Region/Zones","Price","Instance Types"]
+
+
+</script>
+</head>
+<body">
+Images:
+<select id="images">
+  <option value="all">all</option>
+{% for img in image_types  %}
+   <option value="{{img}}">{{img}}</option>
+{% endfor%}
+</select>
+
+Instances:
+<select id="instances">
+  <option value="all">all</option>
+{% for inst in inst_types  %}
+   <option value="{{inst}}">{{inst}}</option>
+{% endfor%}
+</select>
+
+Regions:
+<select id="regions" onchange="showzones(this.options[this.selectedIndex].value)">
+<option value="all">all</option>
+{% for region in regions  %}
+   <option value="{{region.name}}">{{region.name}}</option>
+{% endfor%}
+</select>
+
+Zones:
+<select id="zones">
+</select>
+<hr>
+<input type='button' value='get current spot prices' onclick='get_spot_price()'/>
+<!-- <input type='button' value='get current spot prices' onclick='show_graph()'/> -->
+<hr>
+<table><tr>
+<td><div id="chart"/></td>
+</tr></table>
+<script>
+      d3.select('html').style('height','100%').style('width','100%')
+      d3.select('body').style('height','100%').style('width','100%')
+      d3.select('#chart').style('width', "1000px").style('height', "1000px")
+      scatterPlot3d( d3.select('#chart'));
+    </script>
+<hr>
+</body>
+</html>

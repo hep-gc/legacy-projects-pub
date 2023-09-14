@@ -1,0 +1,193 @@
+merge_type: 'list(append)+dict(recurse_array)+str()'
+
+#cloud-config
+
+write_files:
+-   content: |
+        # Keep grid setup out of environment for root and sysadmin.
+        if [[ ! "$USER" =~ ^slot[0-9]+$ ]] ; then
+            return 0
+        fi
+
+        # Workaround for condor not setting $HOME for worker sessions.
+        # voms-proxy-info requires this.
+        export HOME=`eval echo ~$USER`
+
+        # Tarball base directory
+        base="/cvmfs/grid.cern.ch/emi3wn-latest"
+        
+        # EMI_TARBALL_BASE flag to let jobs know that this is a tarball node
+        # also used to locate etc/emi-version file by SAM nagios probes
+        export EMI_TARBALL_BASE="${base}"
+        
+        # site vo/specific 
+        export VO_ATLAS_SW_DIR="/cvmfs/atlas.cern.ch/repo/sw"
+        export X509_CERT_DIR="/cvmfs/grid.cern.ch/etc/grid-security/certificates"
+        export X509_VOMS_DIR="/cvmfs/grid.cern.ch/etc/grid-security/vomsdir"
+        export VOMS_USERCONF="/cvmfs/grid.cern.ch/etc/grid-security/vomses"
+        
+        # experiment-specific
+        export MYPROXY_SERVER="myproxy.cern.ch"
+        export BDII_LIST="lcg-bdii.cern.ch:2170"
+        export LCG_GFAL_INFOSYS="${BDII_LIST}"
+        
+        # not site specific; usually no change needed
+        export GRID_ENV_LOCATION="${base}/usr/libexec"
+        export -n GLITE_ENV_SET
+        export GT_PROXY_MODE="old"
+        
+        # Add tarball locations to PATH, LD_LIBRARY_PATH, MANPATH, PERL5LIB, PYTHONPATH
+        export PATH="${base}/bin:${base}/sbin:${base}/usr/bin:${base}/usr/sbin:${PATH}"
+        
+        v="${LD_LIBRARY_PATH}"
+        export LD_LIBRARY_PATH="${base}/lib64:${base}/lib:${base}/usr/lib64:${base}/usr/lib:${base}/usr/lib64/dcap"
+        if [ -n "${v}" ]; then
+          export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${v}"
+        fi
+        
+        v="${MANPATH}"
+        export MANPATH="${base}/usr/share/man"
+        if [ -n "${v}" ]; then
+          export MANPATH="${MANPATH}:${v}"
+        fi
+        
+        v="${PERL5LIB}"
+        export PERL5LIB="${base}/usr/lib64/perl5/vendor_perl:${base}/usr/lib/perl5/vendor_perl"
+        if [ -n "${v}" ]; then
+          export PERL5LIB="${PERL5LIB}:${v}"
+        fi
+        
+        # It's important that there is no trailing / for the PYTHONPATH variable.
+        # Some sites might need to explicitly expand the tarball base if 
+        # their users alter the PYTHONPATH significantly, for example:
+        # $base/usr/lib64/python2.6:$base/usr/lib64/python2.6/site-package
+        # See the PYTHONPATH section of the documentation for more details.
+        v="$PYTHONPATH"
+        export PYTHONPATH="${base}/usr/lib64/python2.6/site-packages:${base}/usr/lib/python2.6/site-packages"
+        if [ -n "${v}" ]; then
+          export PYTHONPATH="${PYTHONPATH}:${v}"
+        fi
+        
+        export JAVA_HOME="${base}/usr/lib/jvm/jre-1.6.0-openjdk.x86_64"
+        
+        export LCG_LOCATION="${base}/usr"
+        export GLITE_LOCATION="${base}/usr"
+        # If this is needed try $base/opt/glite/var instead
+        #export GLITE_LOCATION_VAR="/var"
+        export SRM_PATH="${base}/usr/share/srm"
+        export GFAL_PLUGIN_DIR="${base}/usr/lib64/gfal2-plugins/"
+        export GFAL_CONFIG_DIR="${base}/etc/gfal2.d/"
+        
+        unset v base
+    owner: root:root
+    path: /etc/profile.d/grid-setup.sh
+    permissions: '0644'
+-   content: |
+        # Run shoal client at boot to get updated list of proxy caches
+        @reboot root /usr/bin/shoal-client && /usr/bin/cvmfs_config reload
+    owner: root:root
+    path: /etc/cron.d/shoal-client-boot
+    permissions: '0644'
+
+-   content: |
+        ALLOW_DAEMON = condor_pool@*, submit-side@matchsession
+        COLLECTOR_NAME = CernVM cluster at \$(CONDOR_HOST)
+        NEGOTIATOR_INTERVAL = 20
+        START = TRUE
+        SUSPEND = FALSE
+        PREEMPT = FALSE
+        KILL = FALSE
+        TRUST_UID_DOMAIN = TRUE
+        UPDATE_COLLECTOR_WITH_TCP = True
+        COLLECTOR_SOCKET_CACHE_SIZE = 1000
+    owner: root:root
+    path: /etc/condor/config.d/40cernvm
+    permissions: '0644'
+-   content: |
+        #!/bin/bash
+        PATH=/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin:/usr/local/sbin
+
+        rm -rf munin-reporter-light*
+        wget http://vmrepo.heprc.uvic.ca/munin-reporter-light.tar.gz
+        tar -xzvf munin-reporter-light.tar.gz
+
+        yum install -y epel-release
+        yum install -y munin-node
+        rm -fv /etc/munin/plugins/*
+
+        cp munin-reporter-light/if_uvic_ /usr/share/munin/plugins/
+
+        (cd /etc/munin/plugins; ln -s /usr/share/munin/plugins/cpu)
+        (cd /etc/munin/plugins; ln -s /usr/share/munin/plugins/df)
+        (cd /etc/munin/plugins; ln -s /usr/share/munin/plugins/memory)
+
+        stdout=`ifconfig | awk '/^em|^eth/ {print gensub(":",""i,"g",\$1)}'`
+        IFS=$'\n'
+        interfaces=($stdout)
+        for (( i=0; i<=${#interfaces[@]}; i=$i+1 )); do
+            if [ "X${interfaces[$i]}" != 'X' ]; then
+                (cd /etc/munin/plugins; ln -s /usr/share/munin/plugins/if_uvic_ if_${interfaces[$i]})
+            fi  
+        done
+
+        chkconfig redis on
+        service redis start
+
+        cp munin-reporter-light/munin-node-redis /usr/local/sbin/
+        cp munin-reporter-light/munin-node-redis.conf /usr/local/etc/
+        cp munin-reporter-light/munin-node-redis.cron /etc/cron.d/munin-node-redis
+
+        cp munin-reporter-light/munin-node-reporter /usr/local/sbin/
+        cp munin-reporter-light/munin-node-reporter.conf /usr/local/etc/
+
+        cp munin-reporter-light/munin-node-reporter-light /usr/local/sbin/
+        cp munin-reporter-light/munin-node-reporter-light.cron /etc/cron.d/munin-node-reporter-light
+    owner: root:root
+    path: /usr/local/sbin/munin-reporter-light-install
+    permissions: '0700'
+
+cvmfs:
+ local:
+  CVMFS_REPOSITORIES: belle.cern.ch,grid.cern.ch
+  CVMFS_HTTP_PROXY: kraken01.westgrid.ca:3128
+  CVMFS_CACHE_BASE: /mnt/.rw/cvmfs-cache
+
+shoal:
+    shoal_server_url: http://shoal.heprc.uvic.ca/nearest
+    default_squid_proxy: http://kraken01.westgrid.ca:3128;http://cernvm-webfs.atlas-canada.ca:3128;DIRECT
+    cron_shoal: '00 01,13 * * * root /usr/bin/shoal-client && /usr/bin/cvmfs_config reload'
+
+ganglia:
+  globals:
+    send_metadata_interval: 60
+    override_hostname_bash: "/bin/hostname"
+  cluster:
+    name: '"belle"'
+  udp_send_channel:
+    host: 206.12.154.112
+    port: 8660
+    ttl: 2 
+
+runcmd:
+ - [ shoal-client ] 
+ - echo 202.13.207.211 dirac.cc.kek.jp >> /etc/hosts 
+ - echo 202.13.207.225 dirac1.cc.kek.jp >> /etc/hosts 
+ - echo 202.13.207.216 dirac2.cc.kek.jp >> /etc/hosts 
+ - echo 202.13.207.217 dirac3.cc.kek.jp >> /etc/hosts 
+ - echo 202.13.206.45 kek2-lfc.cc.kek.jp >> /etc/hosts
+ - echo nameserver 8.8.8.8 >> /etc/resolv.conf
+ - [ mv, /etc/localtime , /etc/localtime-old ]
+ - [ ln, -sf, /usr/share/zoneinfo/UTC, /etc/localtime ]
+ - [ fallocate, -l, 16G, /mnt/.rw/swap.1 ]
+ - [ mkswap, /mnt/.rw/swap.1 ]
+ - [ swapon, /mnt/.rw/swap.1 ]
+ - [ rm, -f, /etc/condor/config.d/50cernvm ]
+ - [ echo, /usr/local/sbin/munin-reporter-light-install ]
+
+ssh_authorized_keys:
+  - ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAsuHZK7hb5Ve0Q7FHhGd7cUjW+33ZUSkjkSgQ3TvQ5ZMQpRoLenkm/OBxP93gIFNwsdQqbGiMpusfiaJ5Vx/SUdeRX/9P0ULNxkYK4fxUIzOEXSeiUojKvxUMGQjM4fUR8CASKNYnxL65MSYIFrvuOT3Au19fRlv3napXzbvMbjYtOgWdjaZQWfvFUBVtZTASRafBMw44uf9Y/Av2gnD2OlxQ7ijq9zhda2wFLDe4LYDHIzb5NsU7YcYceSMf1dSjiQPMT+bMgvfQmqxD+M5jL+w51sFwuxQCK4UUQfsvv971ewyCHQ+kB8CzrLGfSCkHXeTvOOC0GY8FWC54B6D7RQ== mhp@heplw12.phys.UVic.CA
+  - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC0Np20Q4rFkI7E/Vi/08RHWm1i1PAdzXQ848ookdodofiIXuJBozoUgQmVfb/vtt8w7StpJ1Xkj3suXbFOyCW/iJbYPjve91o9Rxllfp0SPu6RV24nrhyCDOYO9DonAnVn4S9+aOVGXcP3+FbmfuvGCWf/QAKnpj+jo2adOO2Ynf/MhpSKMN/yY4lWOdCmAjh+cT7CbHRqFTmhKYBxa5qNR//VO2EGDtAZjSeath8JF0wxDvUBmRqmeoWhSDiYpUpk8kUpewSV23UyI/oVHHGL40wouUZKqU0ewR1gKHQhD9LmZbktXpF8S/Gxziqvsetv25KS4yCd6aFBmZ1byp+9 crlb@heplw34
+  - ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAucKrPQuzrcKDndD6hbETQr+KfkPiygCxYZH8Jjk1FX1mClEnF2+xFKZb93fbJoRsxOpKgUW21ADstwnb9x2+OGbWnQ3ii3Dz7Anh0M5UKfplrALGfip3GauuLmBeDl0jPJz7pDGSSzxUKcU9nDlO66Px6egWNaKXAExNxdVYAwO9+EFhZEHGns+/W8907dypn08Y4+MKnAN8DeNaHfwItDtzUPwTM1oUwFmatJ5rOyfYxli5oMFn6hcBEqa0Ol/I//UBDiPTjsvp4OIiW7t24plwfJhp00eKUoIhrpHGMajLYkdRiEzmethGkRQSa83dQV9hx/jYkiy8nXrCCmodiw== rsobie@macsob.phys.UVic.CA
+  - ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAgEA0qtnTRW99ygnBFpf+pnEfeQKR1cAC0Zs9Ent6AuFYa2RyyI524tMXUJzjV/Mk/QVniODdp1LYtl42WKcP3qRJ/oOud4Iqk71ko5VoJmHpiczrQanKMwg6GOxRQ17bLVpNDjJEsrq1rG3YUBtUCW910wm7eqAuXALGjRmtYtqscOi30vbOMyZLmfLyBDqK6bQ1Dz103B+g7eZTfZX3vk1VXBXmlcRJZU9/VCN6SvZhqNyga32BpGURXmf/OgTs/964GLLQhP8yuJe09gZg52E7ap+hvdsx9EnSqGNDdcT3XwM5+nwYzr86glnOUm+u9ridCkS+20QDiWkDueIZRsZqhTiYC5gmz4NwBveiuEDT3zRfsSFdZ8Ea+VB7abWQvZXshJbezCaLr6qhLgvWimmMCg9CN/tWf9gDTcIadOyPJvWNYnwBkcZvo++AXzX2WKpN65L144gxhjMO7ehIrTeLnbyt9Nossd1Bav4DnIlVtbYGRpsNVAbytUxwR4m+0q4v1ChphD33wkA7wuiFQhcej2hq8/zqMPAdG9H+rnwQRr5MD2791JIEfFBwyTY7k9Vrt16W4MVVhQtBJkcEF0M2Ziq++ZLWq3USDdTWAZDBsIzgaiX33bvx/x7OTYp6V7CF/+jCFRW3E4VpcQjKdsqZW3TrHuI0k+B46NkJAZVSe8= casteels@uvic.ca
+  - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC5nCWnNvXUGFgW+1cKinQhulovYs6qjjHTv3A1dRjWMuaXfqlz1udRJfTY/aU2qY9dU0slWFW8YKMx7Qdd3lE/YJ60hu8Q85ewLhwlBN8lNBExsCmiYrP7wOfyUZZgVU0cgEVt1sh0Uh9HhB0VXUUuRNcKt3hM0IM7DbHihbFIOv0/FLmNcWaVVJwtqtyMJoFxBl4Wfpk9xnk1sjrDVaBlxnFexIvifJhW0THY68yqpOapRv0+qgp0lecQWqIKgaGDssCGmi8Yq2Z3o4dZBzOZdJiAN0WHR+UPOfcLw86N0MjwBPOhOnWDnluF9Iys+gMxXj9jkXVhQDEMI8JHIShZ7gRuTkjeJ+1CHVXvBRck4vQQz83qHRQR8DFEofqN1h2a8zLQYQ9n310lxOo1LqS0k6qubrbzRIDweEv/Id/+WihhJvgEV9cho7xvm+Xf/s5k0X0xHKlgqCDh7lN6Aabr9s504xDu/HX+D2+w60HiGtZZC76pW5slCZWHlGNKC9C0l/Toe9UOiupD6JJKSHO6SQkZncSUYYuGWic/zYAImsaThvib9zkPU8j8bckxvvTccz6rP2dS7ASXjz0JFxoM9nKlvnFjRCQLxURrW90+w5Qz+rSeIEuzVOBig+qd+mxgG5awkq8+RrCX067oDl8GFy1RMDtoQGCu23SAkE80EQ== workstation
+  - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCt/DIPLcgyqSrVQI0k4GriSadlSJwmbCMaUI7sxpYxhDXQi96Wfi65Tqal6sfltnSyRrblEVzfM8kPMGWadGiu9a4WqvgH9Tspy2BLdkLYY1U4SUR6vs9KSilmZREn3Dn+gWBWF8CNxdsy22IMpgwjsFf3f8pq+a6rYwywNx8j4ym3j+6tnbX1zRgrUIRE0zGYy0Jls6GUnfbYqPCXyF4CbjEHxaoo+alY0GslvafL1h11KtEmYMSr/hHcYEbAL0oUv9q4Xck6XbAxqjrcdp6ePSaP2SsHWQ6w0em028rnUAFdYObUh3b8IJXsv7E4mIp2TB+Zt3aAn0g2yunYXIFB seuster@heplw62

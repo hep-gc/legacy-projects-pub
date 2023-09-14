@@ -1,0 +1,228 @@
+merge_type: 'list(append)+dict(recurse_array)+str()'
+
+#cloud-config
+
+write_files:
+-   content: |
+        # Keep grid setup out of environment for root and sysadmin.
+        if [[ ! "$USER" =~ ^slot[0-9]+$ ]] ; then
+            return 0
+        fi
+
+        # Workaround for condor not setting $HOME for worker sessions.
+        # voms-proxy-info requires this.
+        export HOME=`eval echo ~$USER`
+
+        # Tarball base directory
+        base="/cvmfs/grid.cern.ch/emi3wn-latest"
+
+        # EMI_TARBALL_BASE flag to let jobs know that this is a tarball node
+        # also used to locate etc/emi-version file by SAM nagios probes
+        export EMI_TARBALL_BASE="${base}"
+
+        # site vo/specific
+        export VO_ATLAS_SW_DIR="/cvmfs/atlas.cern.ch/repo/sw"
+        export X509_CERT_DIR="/cvmfs/grid.cern.ch/etc/grid-security/certificates"
+        export X509_VOMS_DIR="/cvmfs/grid.cern.ch/etc/grid-security/vomsdir"
+        export VOMS_USERCONF="/cvmfs/grid.cern.ch/etc/grid-security/vomses"
+
+        # experiment-specific
+        export MYPROXY_SERVER="myproxy.cern.ch"
+        export BDII_LIST="lcg-bdii.cern.ch:2170"
+        export LCG_GFAL_INFOSYS="${BDII_LIST}"
+
+        # not site specific; usually no change needed
+        export GRID_ENV_LOCATION="${base}/usr/libexec"
+        export -n GLITE_ENV_SET
+        export GT_PROXY_MODE="old"
+
+        # Add tarball locations to PATH, LD_LIBRARY_PATH, MANPATH, PERL5LIB, PYTHONPATH
+        export PATH="${base}/bin:${base}/sbin:${base}/usr/bin:${base}/usr/sbin:${PATH}"
+
+        v="${LD_LIBRARY_PATH}"
+        export LD_LIBRARY_PATH="${base}/lib64:${base}/lib:${base}/usr/lib64:${base}/usr/lib:${base}/usr/lib64/dcap"
+        if [ -n "${v}" ]; then
+          export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${v}"
+        fi
+
+        v="${MANPATH}"
+        export MANPATH="${base}/usr/share/man"
+        if [ -n "${v}" ]; then
+          export MANPATH="${MANPATH}:${v}"
+        fi
+
+        v="${PERL5LIB}"
+        export PERL5LIB="${base}/usr/lib64/perl5/vendor_perl:${base}/usr/lib/perl5/vendor_perl"
+        if [ -n "${v}" ]; then
+          export PERL5LIB="${PERL5LIB}:${v}"
+        fi
+
+        # It's important that there is no trailing / for the PYTHONPATH variable.
+        # Some sites might need to explicitly expand the tarball base if
+        # their users alter the PYTHONPATH significantly, for example:
+        # $base/usr/lib64/python2.6:$base/usr/lib64/python2.6/site-package
+        # See the PYTHONPATH section of the documentation for more details.
+        v="$PYTHONPATH"
+        export PYTHONPATH="${base}/usr/lib64/python2.6/site-packages:${base}/usr/lib/python2.6/site-packages"
+        if [ -n "${v}" ]; then
+          export PYTHONPATH="${PYTHONPATH}:${v}"
+        fi
+
+        export JAVA_HOME="${base}/usr/lib/jvm/jre-1.6.0-openjdk.x86_64"
+
+        export LCG_LOCATION="${base}/usr"
+        export GLITE_LOCATION="${base}/usr"
+        # If this is needed try $base/opt/glite/var instead
+        #export GLITE_LOCATION_VAR="/var"
+        export SRM_PATH="${base}/usr/share/srm"
+        export GFAL_PLUGIN_DIR="${base}/usr/lib64/gfal2-plugins/"
+        export GFAL_CONFIG_DIR="${base}/etc/gfal2.d/"
+
+        unset v base
+    owner: root:root
+    path: /etc/profile.d/grid-setup.sh
+    permissions: '0644'
+-   content: |
+        # Run shoal client at boot to get updated list of proxy caches
+        @reboot root /usr/bin/shoal-client && /usr/bin/cvmfs_config reload
+    owner: root:root
+    path: /etc/cron.d/shoal-client-boot
+    permissions: '0644'
+-   content: |
+        #!/bin/bash
+        PATH=/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin:/usr/local/sbin
+        
+        hostname=$(curl 169.254.169.254/latest/meta-data/public-hostname)
+        
+        logger -t 'configure-disks' 'Configuring disks on' $hostname'.'
+        swap_size="4G"
+        swap_loc="/mnt/.rw/swap.1"
+        cloudtype=$(cat /var/lib/cloud_type)
+        case "$cloudtype" in
+          AmazonEC2)
+             swap_size="4G"
+             amiid=$(curl 169.254.169.254/latest/meta-data/ami-id)
+             cloudname=$(cat /var/lib/cloud_name)
+             # just check for existance of xvdb2 and xvdc and if they are mounted
+             if [ -e /dev/xvdb2 -a -e /dev/xvdc ] && 
+                ! mount | grep -q -w xvdb2 &&
+                ! mount | grep -q -w xvdc ; then
+                pvcreate /dev/xvdb2 /dev/xvdc
+                vgcreate data_part /dev/xvdb2 /dev/xvdc
+                lvcreate --name condor_execute data_part -l 100%FREE
+                mkfs.ext4 /dev/data_part/condor_execute
+                mount /dev/data_part/condor_execute /var/lib/condor/execute
+                # reduce reserved blocks to zero percent
+                tune2fs -m0 /dev/mapper/data_part-condor_execute
+             else
+                mkdir /swap
+                mount /dev/xvdc /swap
+                swap_loc="/swap/swap_space"
+             fi
+             ;;
+           *)
+             swap_size="16G"
+             ;;
+        esac
+        fallocate -l $swap_size $swap_loc
+        mkswap $swap_loc
+        swapon $swap_loc
+        
+        summary_m=$(free)
+        summary_d=$(df -h)
+        logger -t 'configure-disks' 'Done:' $summary_m $summary_d
+    owner: root:root
+    path: /usr/local/sbin/configure-disks
+    permissions: '0700'
+
+-   content: |
+        ALLOW_DAEMON = condor_pool@*, submit-side@matchsession
+        COLLECTOR_NAME = CernVM cluster at \$(CONDOR_HOST)
+        NEGOTIATOR_INTERVAL = 20
+        START = TRUE
+        SUSPEND = FALSE
+        PREEMPT = FALSE
+        KILL = FALSE
+        TRUST_UID_DOMAIN = TRUE
+        UPDATE_COLLECTOR_WITH_TCP = True
+        COLLECTOR_SOCKET_CACHE_SIZE = 1000
+    owner: root:root
+    path: /etc/condor/config.d/40cernvm
+    permissions: '0644'
+-   content: |
+        #!/bin/bash
+        PATH=/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin:/usr/local/sbin
+
+        rm -rf munin-reporter-light*
+        wget http://vmrepo.heprc.uvic.ca/munin-reporter-light.tar.gz
+        tar -xzvf munin-reporter-light.tar.gz
+
+        yum install -y epel-release
+        yum install -y munin-node
+        rm -fv /etc/munin/plugins/*
+
+        cp munin-reporter-light/if_uvic_ /usr/share/munin/plugins/
+
+        (cd /etc/munin/plugins; ln -s /usr/share/munin/plugins/cpu)
+        (cd /etc/munin/plugins; ln -s /usr/share/munin/plugins/df)
+        (cd /etc/munin/plugins; ln -s /usr/share/munin/plugins/memory)
+
+        stdout=`ifconfig | awk '/^em|^eth/ {print gensub(":",""i,"g",\$1)}'`
+        IFS=$'\n'
+        interfaces=($stdout)
+        for (( i=0; i<=${#interfaces[@]}; i=$i+1 )); do
+            if [ "X${interfaces[$i]}" != 'X' ]; then
+                (cd /etc/munin/plugins; ln -s /usr/share/munin/plugins/if_uvic_ if_${interfaces[$i]})
+            fi
+        done
+
+        chkconfig redis on
+        service redis start
+
+        cp munin-reporter-light/munin-node-redis /usr/local/sbin/
+        cp munin-reporter-light/munin-node-redis.conf /usr/local/etc/
+        cp munin-reporter-light/munin-node-redis.cron /etc/cron.d/munin-node-redis
+
+        cp munin-reporter-light/munin-node-reporter /usr/local/sbin/
+        cp munin-reporter-light/munin-node-reporter.conf /usr/local/etc/
+
+        cp munin-reporter-light/munin-node-reporter-light /usr/local/sbin/
+        cp munin-reporter-light/munin-node-reporter-light.cron /etc/cron.d/munin-node-reporter-light
+    owner: root:root
+    path: /usr/local/sbin/munin-reporter-light-install
+    permissions: '0700'
+
+cvmfs:
+ local:
+  CVMFS_REPOSITORIES: belle.cern.ch,grid.cern.ch
+  CVMFS_HTTP_PROXY: kraken01.westgrid.ca:3128
+  CVMFS_CACHE_BASE: /mnt/.rw/cvmfs-cache
+
+shoal:
+    shoal_server_url: http://shoal.heprc.uvic.ca/nearest
+    default_squid_proxy: http://kraken01.westgrid.ca:3128;http://cernvm-webfs.atlas-canada.ca:3128;DIRECT
+    cron_shoal: '00 01,13 * * * root /usr/bin/shoal-client'
+
+ganglia:
+  globals:
+   override_hostname_bash: "/bin/hostname"
+   send_metadata_interval: 45
+  cluster:
+   name: '"verifycs"'
+  udp_send_channel:
+   host: monitor-dev.heprc.uvic.ca
+   ttl: 2
+   port: 8660
+  udp_recv_channel:
+   port: 8660
+  tcp_accept_channel:
+   port: 8660
+
+runcmd:
+ - [ shoal-client ]
+ - echo nameserver 8.8.8.8 >> /etc/resolv.conf
+ - [ mv, /etc/localtime , /etc/localtime-old ]
+ - [ ln, -sf, /usr/share/zoneinfo/UTC, /etc/localtime ]
+ - [ /usr/local/sbin/configure-disks ]
+ - [ rm, -f, /etc/condor/config.d/50cernvm ]
+ - [ echo, /usr/local/sbin/munin-reporter-light-install ]

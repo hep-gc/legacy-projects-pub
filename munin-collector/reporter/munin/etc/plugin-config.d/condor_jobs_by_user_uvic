@@ -1,0 +1,3 @@
+[jobsbyuser]
+user munin
+env.MUNIN_JOBSBYUSER_USERS apf apf-test crlb frank igable mhp rsobie

@@ -1,0 +1,18 @@
+[supervisord]
+nodaemon=true
+
+[program:hosts]
+command=/bin/bash -c " /bin/bash /jobs/init_setup.sh"
+
+[program:ntpd]
+command=/bin/bash -c "systemctl restart ntpd"
+
+[program:mariadb]
+command=/bin/bash -c "systemctl restart mariadb; systemctl restart httpd"
+
+[program:defaults]
+command=/bin/bash -c "/bin/bash /jobs/update_defaults.sh"
+
+[program:csv2]
+command=/bin/bash -c "systemctl restart condor; systemctl restart csv2-*"
+

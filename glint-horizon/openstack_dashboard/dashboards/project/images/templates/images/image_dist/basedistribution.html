@@ -1,0 +1,16 @@
+{% load staticfiles %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="{% static 'vm_dist/css/basestyle.css' %}" />
+    {% block scripts %} 
+    
+    {% endblock %}
+</head>
+
+<body onload="init()">
+      {% block table %} 
+    
+      {% endblock %}
+</body>
+</html>

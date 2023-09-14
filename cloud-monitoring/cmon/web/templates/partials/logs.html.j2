@@ -1,0 +1,20 @@
+{% if logs | count %}
+  <table class="table logs">
+    <tbody>
+      {% for log in logs %}
+        <tr class="log-info">
+          <td>Time <strong>{{ log['_source']['@timestamp'] }}</strong></td>
+          <td>Host <strong>{{ log['_source']['host'] }}</strong></td>
+          <td>File <strong>{{ log['_source']['source'] }}</strong></td>
+        </tr>
+        <tr class="log-message">
+          <td colspan="3"><pre style="width: 100%; white-space: pre-wrap;">{{ log['_source']['message'] }}</pre></td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <div class="panel-body">
+    <span class="text-muted">No logs were found. Are Filebeat and Logstash running?</span>
+  </div>
+{% endif %}

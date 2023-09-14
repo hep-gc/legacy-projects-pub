@@ -1,0 +1,96 @@
+#!/usr/bin/env python
+import sys
+import time
+import MySQLdb
+import pika
+import json
+import ConfigParser
+import logging
+
+config = None
+dbhost = None
+dbuser = None
+dbpassword = None
+dbname = None
+
+def unquote(s):
+    if s.startswith('\"') and s.endswith('\"'):
+        return s.strip('\"')
+    else:
+        return s
+    
+def process_stats(ch, method, properties, body):
+    try:
+        stats = json.loads(body)
+        classad = stats['classad']
+        classad_dict = {}
+        for line in classad:
+            values = line.split('=', 1)
+            classad_dict[values[0].strip()] = unquote(values[1].strip())
+        logging.info('Received classad data [%s]' % (classad_dict['GlobalJobId']))
+        if int(classad_dict['CompletionDate']) != 0:
+            if 'JobDuration' not in classad_dict:
+                classad_dict['JobDuration'] = str(int(classad_dict['CompletionDate']) - int(classad_dict['JobStartDate']))
+
+            if 'StageInStart' not in classad_dict:
+                logging.debug('Filling missing StageInStart')
+                classad_dict['StageInStart'] = '0'
+
+            if 'StageInFinish' not in classad_dict:
+                logging.debug('Filling missing StageInFinish')
+                classad_dict['StageInFinish'] = '0'
+
+            try:
+                db = MySQLdb.connect(user=dbuser, passwd=dbpassword, db=dbname)
+                c = db.cursor()
+                c.execute("""INSERT INTO completed_jobs SET ts = FROM_UNIXTIME(%s), GlobalJobId = %s, User = %s, Owner = %s, x509userproxysubject = %s, QDate = FROM_UNIXTIME(%s), JobStartDate = FROM_UNIXTIME(%s), CompletionDate = FROM_UNIXTIME(%s), JobCurrentStartDate = FROM_UNIXTIME(%s), JobDuration = %s, StageInStart = FROM_UNIXTIME(%s), StageInFinish = FROM_UNIXTIME(%s), CommittedTime = %s, CumulativeSuspensionTime = %s, RemoteSysCpu = %s, RemoteUserCpu = %s, RemoteWallClockTime = %s, LocalSysCpu = %s, LocalUserCpu = %s, ExitCode = %s, DiskUsage = %s, RemoteHost = %s, Cmd = %s;""", (stats['timestamp'], classad_dict['GlobalJobId'], classad_dict['User'], classad_dict['Owner'], classad_dict['x509userproxysubject'], int(classad_dict['QDate']), int(classad_dict['JobStartDate']), int(classad_dict['CompletionDate']), int(classad_dict['JobCurrentStartDate']), float(classad_dict['JobDuration']), int(classad_dict['StageInStart']), int(classad_dict['StageInFinish']), int(classad_dict['CommittedTime']), int(classad_dict['CumulativeSuspensionTime']), float(classad_dict['RemoteSysCpu']), float(classad_dict['RemoteUserCpu']), float(classad_dict['RemoteWallClockTime']), float(classad_dict['LocalSysCpu']), float(classad_dict['LocalUserCpu']), int(classad_dict['ExitCode']), int(classad_dict['DiskUsage']), classad_dict['LastRemoteHost'], classad_dict['Cmd']))
+                c.close()
+                db.close()
+                logging.info('Data written to DB [%s]' % (classad_dict['GlobalJobId']))
+                ch.basic_ack(delivery_tag = method.delivery_tag)
+            except MySQLdb.IntegrityError, e:
+                if e[0] == 1062:
+                    # Duplicate entry detected.  In our case, this is not an error; it simply
+                    # means that the job has already been added to the DB.
+                    logging.debug('Ignoring job %s already present in DB.' % (classad_dict['GlobalJobId']))
+                    ch.basic_ack(delivery_tag = method.delivery_tag)
+                else:
+                    logging.warning('Could not add entry to DB.\n%s' % (e))
+            except Exception, e:
+                logging.warning('Could not add entry to DB.\n%s' % (e))
+
+        else:
+            logging.info('Skipping unfinished job %s' % (classad_dict['GlobalJobId']))
+            ch.basic_ack(delivery_tag = method.delivery_tag)
+
+    except Exception, e:
+        logging.error('Error decoding incoming data.\n%s' % (e))
+
+if __name__ == "__main__":
+    logging.basicConfig(filename='/var/log/nep52accountant-collector.log', level=logging.DEBUG, format='%(asctime)s %(message)s')
+
+    config = ConfigParser.ConfigParser()
+    try:
+        config.readfp(open('/etc/nep52accountant.config'))
+    except Exception, e:
+        logging.critical('Error reading configuration file.\n%s' % (e))
+        sys.exit(1)
+
+    dbhost = config.get('defaults', 'dbhost')
+    dbuser = config.get('defaults', 'dbuser')
+    dbpassword = config.get('defaults', 'dbpassword')
+    dbname = config.get('defaults', 'dbname')
+    ampqhost = config.get('defaults', 'ampqhost')
+    
+
+    logging.info('Connected to database %s on %s as %s' % (dbname, dbhost, dbuser))
+    connection = pika.BlockingConnection(pika.ConnectionParameters(host=ampqhost))
+    channel = connection.channel()
+
+    channel.queue_declare(queue='nep52-acnt-job-exit', durable=True)
+
+    channel.basic_consume(process_stats, queue='nep52-acnt-job-exit')
+
+    logging.info('Listening for incoming stats...')
+    channel.start_consuming()
+        

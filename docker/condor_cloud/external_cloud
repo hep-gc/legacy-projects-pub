@@ -1,0 +1,35 @@
+Externally Accessiable cloud_scheduler
+
+Have docker installed and pull the image
+
+docker pull twgibbons/centos-cloud:cloud_scheduler
+
+To have a cloud_scheduler enviroment which is able to connect and communicate with external clouds, there is some network configuration needed.
+
+First, you'll need to have docker installed on your machine. The easiest setup for this to avoid port conflicts with the host is also to have a ip address on the same network as the host which can be dedicated to the container. 
+If this is not possible, the hosts ip address can be used, but condor cannot be running on the host and there must be some additional care taken to avoid port conflicts. 
+
+You will need to run the container, binding certain ports to it for condor. Assuming the ip address being used for the container is 206.12.154.226 you would do this as 
+
+docker run -itd --privileged -p 206.12.154.226:9618:9618 -p 206.12.154.226:40000-40500:40000-40500 condor_cloud:sysctl 
+
+Alternatively if using the hosts ip address
+
+docker run -itd --privileged -p 9618:9618 -p 40000-40500:40000-40500 condor_cloud:sysctl
+
+This then creates the correct connections for condor to connect with the externally created vms.
+
+Now get a terminal within the cloud_scheduler container
+
+docker exec -it [CONTAINER_ID] /bin/bash
+
+First start up condor using systemctl.
+Then go to the condor_config.local file and in there edit the TCP_FORWARDING_HOST to be the ip address which the condor ports were bound to. This ip must be on a network which has acess to the cloud which you are trying to connect cloud_scheduler to. In the above example this would be 206.12.154.226.
+You can then send the reconfigure command to condor with
+
+condor_reconfig
+
+You will also have to configure cloud_scheduler. The main configuration for cloud_scheduler is setting the right forwarding host on the vm so that it is not using the private ip of the docker container, but instead using the public ip set by the host. This needs to be done in the default.yaml file, as well as in in cloud_scheduler.conf, for host_on_vm. The other needed configurations should be set.
+Now you can start up cloud_scheduler. 
+
+You can test the connection with an external cloud with the test job in /jobs. You'll need to change some of the specifics in try.job for your cloud. It will run the bash script try.sh.

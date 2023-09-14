@@ -1,0 +1,12 @@
+<project>
+
+    <target name="deploy to rat01.heprc">
+    	<scp   port="3121"
+    	       todir="rd@rat01.heprc.uvic.ca:/home/rd/horizon" 
+    	       keyfile="${user.home}/.ssh/priv_key_django">
+    	<fileset dir="." />
+    	</scp>
+    </target>
+
+	
+</project>

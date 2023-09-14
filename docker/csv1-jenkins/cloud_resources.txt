@@ -1,0 +1,6 @@
+[container-cloud]
+cloud_type = localhost
+vm_slots = 10
+cpu_cores = 1
+memory = 8000
+networks = default

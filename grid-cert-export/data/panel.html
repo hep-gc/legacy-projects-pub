@@ -1,0 +1,61 @@
+<script type="text/javascript">
+    function checkForm(){
+        var pass1 = document.getElementById("pwd_out_1");
+        var pass2 = document.getElementById("pwd_out_2");
+        var pkcs_pass = document.getElementById("pwd_in");
+        
+        var goodColour = "#66cc66";  //green
+        var badColour = "#ff6666";   //red
+        
+        
+        //check for password equality and colour accordingly
+        if (pass1.value == pass2.value && pass1.value != ""){
+            pass2.style.backgroundColor = goodColour;
+        }
+        else{
+            pass2.style.backgroundColor = badColour;
+        }
+        
+        //check for password validity (enable/disable the form button)
+        if(pkcs_pass.value != "" && pass1.value != "" && pass1.value == pass2.value){
+            document.getElementById("submit_button").disabled = false;
+        }
+        else {
+            document.getElementById("submit_button").disabled = true;
+        }
+        
+    }
+</script>
+<noscript>
+    Enable javascript...you're way behind the times.
+</noscript>
+<html>
+    <!--the onkeypress disables pressing the enter key on this page, user needs to click submit -->
+    <body bgcolor="#F5DA81" onload="checkForm()" >
+        <h3>Grid Canada Certificate Export</h3>
+        <!--TODO: add a link here to validate certificate (needs to open in a new tab, not in the panel-->
+        <br>
+        <form id="password_form">
+            <table border="0">
+                <tr>
+                    <td align="right">Backup Certificate Password:</td>
+                    <td><input type="password" name="pwd_in" id="pwd_in" onkeyup="checkForm()" onkeypress="return event.keyCode!=13"/></td> 
+                </tr>
+                <tr><td colspan="2" align="center">(You will use this again in a minute)</td></tr>
+                <tr><td><br/></td></tr>
+                <tr>
+                    <td align="right">Private Key Passphrase:</td>
+                    <td><input type="password" name="pwd_out_1" id="pwd_out_1" onkeyup="checkForm()" onkeypress="return event.keyCode!=13"/></td>
+                </tr>
+                <tr>
+                    <td align="right">Confirm Private Key Passphrase:</td>
+                    <td><input type="password" name="pwd_out_2" id="pwd_out_2" onkeyup="checkForm()" onkeypress="return event.keyCode!=13"/>
+                    <span id="confirmMessage" class="confirmMessage"></span>
+                    </td>
+                </tr>
+                <tr><td colspan="2" align="center"><input type="submit" value="Export" id="submit_button"/></td>
+                </tr>
+            </table>
+        </form>
+    </body>
+</html>

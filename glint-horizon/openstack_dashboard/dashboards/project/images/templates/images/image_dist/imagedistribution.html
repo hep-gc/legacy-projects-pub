@@ -1,0 +1,315 @@
+{% extends "project/images/image_dist/basedistribution.html" %}
+{% load staticfiles %}
+
+{% block scripts %}
+<link rel="stylesheet" href="{% static 'vm_dist/css/chartstyle.css' %}" />
+<script type="text/javascript" src="{% static 'vm_dist/js/image_dist.js' %}"></script>
+<script type="text/javascript" src="{% static 'vm_dist/js/utils.js' %}"></script>
+<script type="text/javascript" src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+
+<script>
+
+var img_list=[
+{% for row in data.rows  %}
+    {'image_name':'{{row.image}}','disk_format':'{{row.disk_format}}','container_format':'{{row.container_format}}' },
+{% endfor %}
+]
+
+var site_list=[
+{% for row in data.sites  %}
+  {'site_name':'{{row.name}}','tenent_name':'{{row.tenent}}' },
+{% endfor %}
+]
+
+var OPSDATA = {'save':img_list}
+var OPSURL = {'save':'/image_dist/jsonrequestpost/'}
+var OPSVIEW = {'save':{'div':'info'}} 
+var OPS_CB = {'save':save_local_cb}
+
+var op_handlers=[]
+
+function save_local_cb(msg){
+	console.log("receiving response");
+	console.log(msg);
+	img_list = JSON.parse(msg);
+	OPSDATA['save']=img_list;
+	document.getElementById("save_button").disabled=false;
+}
+
+
+function ImageRequestHandler(key){
+  this.httpReq=new Object();
+  this.httpUtils = new HTTPUtils();
+  this.progress_ID='';
+  this.check_box_id='';
+  this.thread_ID='';
+  this.req_count=0;
+  this.key=key;
+  
+  this.checkuptimer=function(){
+  	//console.log("send request to get updated on server thread handling this request "+this.progress_ID+" "+this.thread_ID);
+  	console.log("checkup timer")
+  	this.httpReq = this.httpUtils.CreateHttpObject();
+  	json_req='{"status":"incomplete","req_count":'+(this.req_count++)+',"op":"thread_update","thread_id":'+this.thread_ID+'}'
+    this.httpUtils.sendViaPOST(this.httpReq,"save",json_req,function(){op_handlers[key].checkupcb()});
+  }
+  
+  
+  this.request=function(jsonMessage,opurl,progress_id,ck_box_id){
+    this.progress_ID=progress_id;
+    this.check_box_id=ck_box_id;
+    this.httpReq = this.httpUtils.CreateHttpObject();
+    this.httpUtils.sendViaPOST(this.httpReq,opurl,jsonMessage,function(){op_handlers[key].callback();});
+  };
+  
+  this.checkupcb=function(){
+    if(this.httpReq.readyState==4){
+		var json_resp=this.httpReq.responseText;
+		console.log("checkupcb "+json_resp);	
+		json_resp_obj = JSON.parse(json_resp);
+		if(json_resp_obj.status=='incomplete'){
+		    //update progress bar
+		    
+		    var num = 100.0*(1.0-(1.0/(1.0+(json_resp_obj.req_count/4))) );
+		    console.log("num is "+num+":"+json_resp_obj.req_count);
+		    document.getElementById(this.progress_ID).value=num;
+			setTimeout(function(){op_handlers[key].checkuptimer()},1000);
+		}else{
+			console.log("finally done");
+			document.getElementById(this.progress_ID).value=100;
+			document.getElementById(this.progress_ID).style.visibility='hidden';
+			document.getElementById(this.check_box_id).setAttribute("is_src","True");
+			document.getElementById(this.progress_ID).value=0;
+		}
+	}
+  }
+  
+  this.callback=function callback(){
+    
+    if(this.httpReq.readyState==4){
+        console.log("got back request")
+		var json_resp=this.httpReq.responseText;
+		js_obj=JSON.parse(json_resp)
+		//console.log("received initial save response for thread ");	
+		this.thread_ID=js_obj.thread_id
+		console.log("id is "+this.thread_ID);
+		setTimeout(function(){op_handlers[key].checkuptimer()},1000);
+		//console.log("timer set")
+	}
+  }
+  
+}
+
+
+function save(){
+	for(var img in img_list){
+		for(var site in site_list){
+			var id = img_list[img].image_name+"_"+site_list[site].site_name;
+			
+			var is_src = document.getElementById(id).hasAttribute("is_src");
+			var is_sel =document.getElementById(id).checked;
+			
+			if( is_src && !is_sel){ 
+				document.getElementById("progress_"+id).style.visibility="visible";
+				document.getElementById("pending_tag_"+id).style.visibility="hidden";
+				console.log("a remove image is needed at "+img_list[img].image_name+":"+site_list[site].site_name);
+				img_handler = new ImageRequestHandler(img_list[img].image_name+":"+site_list[site].site_name);
+				op_handlers[img_list[img].image_name+":"+site_list[site].site_name]=img_handler;
+				json_req='{"op":"rem_img","image_name":"'+img_list[img].image_name+'","image_src_tenent":"'+site_list[site].tenent_name+'","img_src_site":"'+site_list[site].site_name+'"}'
+				img_handler.request( json_req,"save","progress_"+img_list[img].image_name+"_"+site_list[site].site_name,img_list[img].image_name+"_"+site_list[site].site_name);
+			
+			}else if (!is_src && is_sel){
+				document.getElementById("progress_"+id).style.visibility="visible";
+				document.getElementById("pending_tag_"+id).style.visibility="hidden";
+				console.log("a add image image is needed at "+img_list[img].image_name+":"+site_list[site].site_name);
+				img_handler = new ImageRequestHandler(img_list[img].image_name+":"+site_list[site].site_name);
+				op_handlers[img_list[img].image_name+":"+site_list[site].site_name]=img_handler;
+				src_list=[]
+				for(var src_site in site_list){
+					var src_id = img_list[img].image_name+"_"+site_list[src_site].site_name;
+					var is_src = document.getElementById(src_id).hasAttribute("is_src");
+					var is_sel =document.getElementById(src_id).checked;
+					if (is_src && is_sel){
+					    obj = {}
+					    obj.site_name = site_list[src_site].site_name;
+					    obj.tenent_name = site_list[src_site].tenent_name;
+						src_list.push(obj);
+					}
+				}
+				//img_src_list='[{"site_name":"Rat01-hep"},{"site_name":"Mouse-hep"}]'
+				img_src_list=JSON.stringify(src_list);
+				
+				json_req='{"container_format":"'+img_list[img].container_format+'","disk_format":"'+img_list[img].disk_format+'","op":"add_img","image_name":"'+img_list[img].image_name+'","image_dest_tenent":"'+site_list[site].tenent_name+'","image_dest":"'+site_list[site].site_name+'","img_src":'+img_src_list+'}'
+				img_handler.request( json_req,"save","progress_"+img_list[img].image_name+"_"+site_list[site].site_name,img_list[img].image_name+"_"+site_list[site].site_name);
+			}
+		}
+	}
+	//img_handler = new ImageRequestHandler();
+	//json_req='{"op":"add_img","image_name":"fedora-image","image_dest":"ALTO-hep","img_src":[{"site_name":"Rat01-hep"},{"site_name":"Mouse-hep"}]}'
+	//img_handler.request( json_req,"save","progress_fedora-image_Rat01");
+}
+
+function localinit(){
+	
+}
+
+function showall(){
+	for (var img in img_list){
+	    var row_vis_cnt=0;
+		for (var site in site_list){
+			//console.log(img_list[img].image_name+"_"+site_list[site].site_name)
+			ck_box = document.getElementById(img_list[img].image_name+"_"+site_list[site].site_name);
+			if (ck_box != null){
+				console.log("checked "+img_list[img].image_name+"_"+site_list[site].site_name+" is "+ck_box.checked+" "+ck_box.getAttribute("is_public"));
+				if(ck_box.checked){	
+					if(ck_box.disabled){
+						ck_box.disabled=false;
+						row_vis_cnt++;
+					}
+				}
+			}
+		}
+		if(row_vis_cnt>0){
+			document.getElementById(img_list[img].image_name).style.display="";
+		}
+	}
+}
+
+function shared(){
+	showall()
+	for (var img in img_list){
+	    var row_vis_cnt=0;
+		for (var site in site_list){
+			//console.log(img_list[img].image_name+"_"+site_list[site].site_name)
+			ck_box = document.getElementById(img_list[img].image_name+"_"+site_list[site].site_name);
+			if (ck_box != null){
+				console.log("checked "+img_list[img].image_name+"_"+site_list[site].site_name+" is "+ck_box.checked+" "+ck_box.getAttribute("is_public"));
+				if(ck_box.checked){	
+					if(ck_box.getAttribute("is_owner")=="False"){
+						row_vis_cnt++;
+					}else{
+						ck_box.disabled="disabled"
+					}
+				}
+			}
+		}
+		if (row_vis_cnt==0){
+			document.getElementById(img_list[img].image_name).style.display="none";
+		}
+	}
+}
+
+function project(){
+	showall()
+	for (var img in img_list){
+	    var row_vis_cnt=0;
+		for (var site in site_list){
+			//console.log(img_list[img].image_name+"_"+site_list[site].site_name)
+			ck_box = document.getElementById(img_list[img].image_name+"_"+site_list[site].site_name);
+			if (ck_box != null){
+				console.log("checked "+img_list[img].image_name+"_"+site_list[site].site_name+" is "+ck_box.checked+" "+ck_box.getAttribute("is_public"));
+				if(ck_box.checked){	
+					if(ck_box.getAttribute("is_owner")=="True"){
+						row_vis_cnt++;
+					}else{
+						ck_box.disabled="disabled"
+					}
+				}
+			}
+		}
+		if (row_vis_cnt==0){
+			document.getElementById(img_list[img].image_name).style.display="none";
+		}
+	}
+}
+
+function public(){
+	showall()
+	for (var img in img_list){
+	    var row_vis_cnt=0;
+		for (var site in site_list){
+			//console.log(img_list[img].image_name+"_"+site_list[site].site_name)
+			ck_box = document.getElementById(img_list[img].image_name+"_"+site_list[site].site_name);
+			if (ck_box != null){
+				console.log("checked "+img_list[img].image_name+"_"+site_list[site].site_name+" is "+ck_box.checked+" "+ck_box.getAttribute("is_public"));
+				if(ck_box.checked){	
+					if(ck_box.getAttribute("is_public")=="False"){
+						row_vis_cnt++;
+					}else{
+						ck_box.disabled="disabled"
+					}
+				}
+			}
+		}
+		if (row_vis_cnt==0){
+			document.getElementById(img_list[img].image_name).style.display="none";
+		}
+	}
+}
+
+function image_select(id){
+	console.log("toggle image for dist. "+id+" attr "+document.getElementById(id).hasAttribute("_is_src"));
+	var is_src = document.getElementById(id).hasAttribute("is_src");
+	var is_sel =document.getElementById(id).checked;
+	console.log("is src "+is_src+" is checked "+is_sel);
+	if( (is_src && !is_sel) || (!is_src && is_sel) ){
+		//document.getElementById("progress_"+id).style.visibility="visible";
+		document.getElementById("pending_tag_"+id).style.visibility="visible";
+	}else{
+		//document.getElementById("progress_"+id).style.visibility="hidden";
+		document.getElementById("pending_tag_"+id).style.visibility="hidden";
+	}
+}
+
+
+</script>
+{% endblock %}
+
+{% block table %}
+<br>
+<div style="float: left;"><font size="5"> Distribution</font></div>
+<div style="float: right;">
+<input type="button" value="all" style="border-style:inset;" class="btn btn-small" onclick="showall()">
+<input type="button" value="Project" class="btn btn-small" onclick="project()">
+<input type="button" value="Shared" class="btn btn-small" onclick="shared()">
+<input type="button" value="Public" class="btn btn-small" onclick="public()">
+| <input type="button" value="Save" class="btn btn-small" onclick="save()">
+</div>
+
+<br><br>
+<div class="table_wrapper">
+<table border=1 class="table table-bordered table-striped datatable">
+<tr><td></td>
+{% for row in data.sites %}
+<td><b>{{row.name}} ({{row.tenent}})</b></td>
+{% endfor %}
+
+</tr>
+{% for row in data.rows  %}
+  
+  <tr id="{{row.image}}">
+  
+   <td><b>{{row.image}}</b></td>
+   
+	   {% for site_name in data.sites %}
+	   <td> 
+	       
+	       <input type="checkbox" id="{{row.image}}_{{site_name.name}}" style="float:left;" onclick="image_select('{{row.image}}_{{site_name.name}}')" 
+		   {% for col in row.sites %}
+		         {% if col.name == site_name.name %}
+		   			is_src="True" is_public="{{col.is_public}}" is_owner="{{col.is_owner}}"  checked
+		   	     {% endif %}   
+		   {% endfor %}
+		   > 
+		   <div style="visibility:hidden;float:left;" id="pending_tag_{{row.image}}_{{site_name.name}}" > Pending</div>
+		   <progress id="progress_{{row.image}}_{{site_name.name}}" style="visibility:hidden;float:center;" max="100"><span>0</span>%</progress>
+		     
+	   </td>
+	   
+	   {% endfor %}
+	
+  </tr>
+  
+{% endfor %}
+</table></div>
+{% endblock %}

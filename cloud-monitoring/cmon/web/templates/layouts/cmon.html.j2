@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Cloud Monitor</title>
+
+  <!-- jQuery 2.2.0 -->
+  <script src="https://code.jquery.com/jquery-2.2.0.min.js"></script>
+
+  <!-- Plotly.js 1.9.0 -->
+  <script src="https://cdn.plot.ly/plotly-1.9.0.min.js"></script>
+
+  <!-- Bootstrap 3.3.6 -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+  <script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
+
+  <!-- C'mon -->
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/cmon.css') }}">
+  <script src="{{ url_for('static', filename='js/cmon.js') }}"></script>
+</head>
+<body>
+  <nav class="navbar navbar-default navbar-fixed-top navbar-inverse">
+    <div class="container-fluid">
+      <div class="navbar-header">
+        <a class="navbar-brand" href="/"><span class="glyphicon glyphicon-cloud-download"></span> Cloud Monitor</a>
+      </div>
+
+      <ul class="nav navbar-nav">
+        {% for link in links %}
+          <li><a href="{{ link.url }}" target="_blank"><span class="glyphicon glyphicon-{{ link.icon }}"></span> {{ link.name }}</a></li>
+        {% endfor %}
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button"><span id="selected-range">Last 1 hour</span> <span class="caret"></span></a>
+          <div class="dropdown-menu">
+            <div class="container-fluid" style="width: 800px;">
+              <div class="row">
+                <div class="col-sm-5">
+                  <form class="enter-range">
+                    <h3>Enter Range</h3>
+                    <div class="form-group">
+                      <label for="date-range-from">From</label>
+                      <input type="from" class="form-control" id="date-range-from" placeholder="From" value="-1h">
+                    </div>
+                    <div class="form-group">
+                      <label for="date-range-end">End</label>
+                      <input type="end" class="form-control" id="date-range-end" placeholder="End" value="now">
+                    </div>
+                    <p><button id="apply-date-range" class="btn btn-default">Apply</button></p>
+                  </form>
+                </div>
+                <div class="col-sm-7">
+                  <div class="select-range">
+                    <h3>Quick Ranges</h3>
+                    {% for ranges in date_ranges %}
+                      <ul class="col-sm-4">
+                        {% for text, range in ranges.iteritems(): %}
+                          <li><a class="date-range {{ 'selected' if range[0] == '-1h' }}" data-from="{{ range[0] }}" data-end="{{ range[1] }}" href="">{{ text }}</a></li>
+                        {% endfor %}
+                      </ul>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </li>
+        <li class="disabled"><a href="#" id="export"><span class="glyphicon glyphicon-download"></span> Export</a></li>
+        <li><a id="refresh" href="#"><span class="glyphicon glyphicon-refresh"></span> Refresh <span id="refresh-timer" class="badge">60</span></a></li>
+      </ul>
+    </div>
+  </nav>
+  <div class="container-fluid">
+    <ol class="breadcrumb">
+      {% block breadcrumb %}{% endblock %}
+    </ol>
+    <div class="plot" style="display: none;">
+      <div id="plot" style="width: 100%; height: 350px;"></div>
+      <a href="#" id="close-plot" class="btn btn-xs btn-default btn-close">Close Plot <span class="glyphicon glyphicon-remove"></span></a>
+      <div class="loading"></div>
+    </div>
+    <div id="content">{% block content %}{% endblock %}</div>
+  </div>
+</body>
+</html>

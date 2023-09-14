@@ -1,0 +1,21 @@
+#!/bin/sh
+
+if [ "$1" = "config" ]; then
+
+	echo 'graph_title Cloud Scheduler VMs'
+	echo 'graph_category Cloud'
+	echo 'graph_vlabel vms'
+	echo 'running.label Running'
+	echo 'starting.label Starting'
+	echo 'error.label Error'
+	echo 'error.colour FF0000'
+	exit 0
+fi
+
+echo -n "running.value "
+cloud_status -m | grep Running | wc -l
+echo -n "starting.value "
+cloud_status -m | grep Starting | wc -l
+echo -n "error.value "
+cloud_status -m | grep Error | wc -l
+exit 0

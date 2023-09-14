@@ -1,0 +1,6 @@
+python-novaclient
+libvirt-python
+sqlalchemy
+python-neutronclient
+jinja2
+pymysql

@@ -1,0 +1,10 @@
+/var/backups/nep52acnt.db.sql.gz {
+daily
+rotate 8
+nocompress
+create 640 root root
+postrotate
+mysqldump -u nep52 -p******** nep52 completed_jobs > /var/backups/nep52acnt.db.sql
+gzip -9f /var/backups/nep52acnt.db.sql
+endscript
+}

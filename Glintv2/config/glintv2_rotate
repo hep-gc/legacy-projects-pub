@@ -1,0 +1,20 @@
+/var/log/celery/*.log {
+        weekly
+        missingok
+        rotate 52
+        compress
+        delaycompress
+        notifempty
+        copytruncate
+        create 0644 celery celery
+}
+/var/log/glintv2/*.log {
+        weekly
+        missingok
+        rotate 52
+        compress
+        delaycompress
+        notifempty
+        copytruncate
+        create 0644 apache apache
+}

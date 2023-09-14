@@ -1,0 +1,9 @@
+{
+    "name": "grid-cert-export", 
+    "license": "MPL 1.1/GPL 2.0/LGPL 2.1", 
+    "author": "Andrey Polyakov", 
+    "version": "0.3.4", 
+    "fullName": "Grid Cert Export", 
+    "id": "jid1-5e5w1tL5wMs5tA", 
+    "description": "A simple extension that exports cert.gridcanada.ca certificates from the firefox certificate store.\nSee the git hub page: https://github.com/hep-gc/grid-cert-export"
+}

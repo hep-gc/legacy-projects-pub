@@ -1,0 +1,129 @@
+Containerized Testing Cloud
+
+Install docker (see other file for docker install instructions if needed). Then from the docker hub pull 
+
+docker pull twgibbons/centos-cloud:devstack
+docker pull twgibbons/centos-cloud:cloud_scheduler
+
+This will give the images for 2 containers, one for cloud scheduler and condor, the other for devstack. They will be running CentOS 7, with systemd enabled within the containers. This is necessary as devstack needs to run multiple processes to setup a cloud and cloud_scheduler requires condor to run, so an init system must run as PID 1 for both containers. For the devstack container, with no interactive display, run the container as 
+
+docker run -itd --privileged twgibbons/centos-cloud:devstack
+
+**Note: If running container on desktop, to have the horizon interactive display run the container as 
+
+docker run -itd --privileged -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=$DISPLAY twgibbons/centos-cloud:devstack
+
+This will not work if the container is running on a vm which is accessed through ssh forwarding.**
+
+This will output the running container id. Then to run a terminal within the container
+
+docker exec -it [container-id] /bin/bash
+
+Since devstack id meant as a cloud testing enviroment, it does not persist through reboot. This means that when launching a the devstack container, some additional setup is required. First to stack the cloud instance, you must be a non-root user.
+
+sudo useradd -s /bin/bash -d /opt/stack -m stack
+echo "stack ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/stack
+sudo su - stack
+
+Then download the devstack git repository
+
+git clone https://git.openstack.org/openstack-dev/devstack
+cd devstack
+
+There is a configuration file for devstack already within the container, copy it into the devstack directory and then setup devstack
+
+cp /jobs/local.conf
+./stack.sh
+
+**Note: This can take anywhere from ~15-30 minutes, mainly depending on the speed of your internet connection. You will need at least ~4GB of free ram to be able to setup devstack, and more to be able to launch any instances on the cloud.**
+
+Once this has completed you now have a test cloud! There is a few setup steps necessary for you to be able to test it with cloud_scheduler. The first thing to do is configure the dhcp agent. This is in /etc/neutron/dhcp_agent.ini, set force_metadata= True
+
+Then restart the dhcp agent for the change to take affect.
+
+sudo systemctl restart devstack@q-dhcp.service
+
+Now, you'll need to authenticate with openstack for the rest of the configuration
+
+cd /jobs
+source adminrc.sh
+
+This will prompt you for a password, the default admin password is 'secret', unless you otherwise specified in the local.conf file for the devstack setup. Now, create a user and project for cloud_scheduler to use. 
+
+openstack project create hep
+openstack user create --project hep --password-prompt hep-user
+openstack role add --project hep --user hep-user Member
+
+Then configure your network so your containers and launched instances can communicate.
+
+openstack network set --share public
+openstack subnet set --dhcp public-subnet
+openstack security group create --project hep hep-group
+openstack security group rule create --proto icmp --dst-port 0 hep-group
+openstack security group rule create --proto tcp --dst-port 22 hep-group
+
+Now you can login as your created user. There is a hep-user authentication file included in the container which will work for authentication if above names are used. If not, edit the file to reflect the user and project names.
+
+source hep-rc.sh
+
+To be able to log in to any of launched vm's, you need to generate a keypair and load it into openstack
+
+ssh-keygen
+openstack keypair create --public-key /opt/stack/.ssh/id_rsa.pub stack-user
+
+For cloud_scheduler, you will need an image with condor installed. You can download a base CentOS 6 image with
+
+sudo wget https://cloud.centos.org/centos/6/images/CentOS-6-x86_64-GenericCloud.qcow2
+
+openstack image create --disk-format qcow2 --file /jobs/CentOS-6-x86_64-GenericCloud.qcow2 centos6-base
+
+**Note: After the image is create in devstack, to save space within the container, the file can be deleted if desired**
+
+Now, launch a CentOS 6 instance which we will be able to download condor onto.
+
+openstack server create --image centos6-base --flavor m1.small --security-group hep-group --key-name stack-user --network public condor-install
+
+You should see your new launched instance if you run
+
+openstack server list
+
+It will take it a few minutes to boot up, but once the vm is running you can ssh into it using the ip address shown from server list
+
+To install condor on the VM, run
+
+sudo su
+yum -y install wget
+cd /etc/yum.repos.d
+wget http://research.cs.wisc.edu/htcondor/yum/repo.d/htcondor-stable-rhel6.repo
+wget http://research.cs.wisc.edu/htcondor/yum/RPM-GPG-KEY-HTCondor
+rpm --import RPM-GPG-KEY-HTCondor
+yum -y install condor
+
+Once that completes, you can exit out of the VM. You then want to make a snapshot of the VM for cloud_scheduler to use.
+
+openstack server image create --name centos6-condor --wait condor-install
+
+Now you're devstack container is configured! You'll need to note the ip address of the docker container, as cloud_scheduler will need that address. 
+
+To setup the cloud_scheduler container run
+
+docker run -itd --privileged twgibbons/centos-cloud:condor
+
+Then to get a terminal inside the container
+
+docker exec -it [container_id] /bin/bash
+
+Some configuration settings will need to be changed to enable it with openstack. First take note of the ip address of the cloud_scheduler container
+
+For condor configuration, go to /etc/condor and edit condor_config.local so that the TCP_FORWARDING_HOST is the ip address of the cloud_scheduler container. Then you can start up condor with
+
+systemctl start condor
+
+For cloud_scheduler, go to /etc/cloudscheduler. Edit default.yaml so CONDOR_HOST is the ip address of the cloud_scheduler container. You will also need to edit cloud_scheduler.conf so that condor_host_on_vm is the ip address of the cloud_scheduler container. You will also need to set default_yaml to /etc/cloudscheduler and tell cloud_scheduler to use a context file with condor_context_file: /etc/condor/central_manager
+
+Then, the devstack cloud needs to be added to your cloud_resources.conf file. There is a sample cloud_resources file in /jobs, though you will need the correct host_ip and auth_url. You can then start cloud_scheduler with
+
+/etc/init.d/cloud_scheduler start
+
+If you run cloud_status, you should see the devstack cloud show up. Since these container are both running on the default bridge network, they have 2 way connection between them. You can now launch instances from cloud_scheduler on devstack! There is a small test job for proof of theory in /jobs.
+

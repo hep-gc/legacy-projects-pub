@@ -1,0 +1,84 @@
+#!/usr/bin/perl
+#	Report jobs by user.
+    $option = shift();
+
+    @users = split(/[\s\n]+/, $ENV{'MUNIN_JOBSBYUSER_USERS'});
+
+    @clouds = `cloud_status | grep -v 8111 | awk 'NF>0 && !/^Resource/ && !/^NAME/ {print \$1}' | sort`;
+    foreach $cloud (@clouds) {
+        chop($cloud);
+    }
+
+    if ($option eq 'config') {
+        foreach $user (@users) {
+            print "multigraph jobs_by_$user\n";
+            print "graph_args --lower-limit 0\n";
+            print "graph_title HTCondor Jobs by User: $user\n";
+            print "graph_category Cloud\n";
+            print "graph_vlabel Jobs\n";
+            print "graph_width 600\n";
+            print "graph_height 300\n\n";
+
+            $areastack='AREA';
+            foreach $cloud (@clouds) {
+                print "$cloud.label $cloud\n";
+                print "$cloud.draw $areastack\n";
+                print "$cloud.max 10000\n";
+                print "$cloud.min 0\n\n";
+                $areastack='STACK';
+            }
+        }
+    } else {
+        foreach $user (sort(@users)) {
+            foreach $cloud (sort(@clouds)) {
+                $count{$user}{$cloud} = 0;
+            }
+        }
+
+        for ($i=0; $i<3; $i++) {
+            @vms=`cloud_status -m | grep -v 8111 | awk 'NF>5 && !/^ID/ && !/^Total/ && !/8111\.\$/ && !/8111\?\$/ {print \$6 " " \$2}'`;
+            last if $#vms > 0;
+            system('sleep 30');
+        }
+
+        if ($#vms < 1) {
+            system "logger -t $0 'cloud_status -m' failed to retrieve data after $i attempts.\n";
+            exit;
+        }
+
+        foreach $vm (@vms) {
+            @x = split(/[\s\n]+/, $vm);
+            $cloud{$x[1]}=$x[0];
+        }
+
+        for ($i=0; $i<3; $i++) {
+            @jobs=`condor_q -running | awk 'NF>5 && !/Submitter:/ && !/RUN_TIME/ {print \$2 " " \$6}'`;
+            last if $#jobs > 0;
+            system('sleep 30');
+        }
+
+        if ($#jobs < 1) {
+            system "logger -t $0 'condor_q -running' failed to retrieve data after $i attempts.\n";
+            exit;
+        }
+
+        foreach $job (@jobs) {
+            @x = split(/[\s\@\n]+/, $job);
+            if ($cloud{$x[2]} eq '') {
+                for $cloud (keys(%cloud)) {
+                    #print "$x[0] $cloud{$cloud}\n" if $x[2] =~/^$cloud/;
+                    $count{$x[0]}{$cloud{$cloud}} += 1 if $x[2] =~/^$cloud/;
+                }
+            } else {
+                #print ">$x[0]< >$cloud{$x[2]}<\n";
+                $count{$x[0]}{$cloud{$x[2]}} += 1;
+            }
+        }
+
+        foreach $user (sort(@users)) {
+            print "multigraph jobs_by_$user\n";
+            foreach $cloud (sort(@clouds)) {
+                print "$cloud.value $count{$user}{$cloud}\n";
+            }
+        }
+    }

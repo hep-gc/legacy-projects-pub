@@ -1,0 +1,14 @@
+# replaces the conroller config to point to OpenDaylight
+# at cybera
+#
+## version "13.2-20131003_opus_exdc.1 [dc-builder]";
+protocols {
+    openflow {
+        switch SDNTestbed {
+            replace: controller {
+                address 199.116.232.27;
+            }
+        }
+    }
+}
+

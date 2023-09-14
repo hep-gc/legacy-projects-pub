@@ -1,0 +1,46 @@
+# users for the SDN testbed
+system {
+    login {
+        replace: user igable {
+            full-name "Ian Gable";
+            uid 2010;
+            class super-user;
+            authentication {
+                ssh-rsa "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEArCq5+hUgS0UVsgZ+U/u12Fi2c+iOFimsfcv8JYODraSCjRSslJb110fLD6NPDk/8xm2C2gxqBar8tK2zZaftS4LYwtTY/8qMGCyf5O+8uCVuJztUt3V3m9TtAAp8pKX6aqhASOOW/IFfkodbt/6XwjGiCf5QPs8cHdh7S4zR4dJ9N154uDQkIs2meuX/SYZktkRz6qbo0pYceGZTh8TV5lGYUN6iZefV40lx/p+3BlRmC7NcaG+HGf4KpczHpofgp096sSoiIKlZm4rpcNxNMnNPLoCCP6w2eRDS1V7hDVIO2rF1i+OrkgEDPqf1dx/Q3911NcbawwdaS/ssB+jPFw== igable@sabadoo.phys.UVic.CA";
+            }
+        }
+        replace: user ttam {
+            full-name "Thomas Tam";
+            uid 2013;
+            class super-user;
+            authentication {
+                ssh-rsa "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDTWHxTQWJC9B4V9c6Um0sOVkBsrqJwxTKtPxHnuKWN1g7rUs65l9q20jlIMqnWvp8Uhr7T7cbMGsKV6XaH7z0f2UOh5y1QsC3uVAMYfiO20A9aviQbIlswqqCmPJvdWR3uv7rdm545T9M7dmFCB27egLNQwY76Ft/NSW7s4ZmUj1DJQtJnzxMIutXJ9rFczDvY5dqhRa/DIRZ/1FQ8L1uQfaXIfal9IZhJWK/gNEv4QnV/evh2q21ox7zDIyuXLsqSgCcKIbP58WDGLQL6kME4HcKD1wAjxviooK1G9FlbCE6Y9El7n1aGsYGpFJkfasd2UgjlBZheVedqnAOvCJVD ttam@localhost";
+            }
+        }
+        replace: user illtm {
+            full-name "Alex Valiushko";
+            uid 2014;
+            class super-user;
+            authentication {
+                ssh-rsa "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDPbNOdoPdr/r8rxDkFaA+cr8dBIyuIcPO6mA7gGJawaZS3nL/lDSklj26y1Ha/bFH8m16f43zxOS+8u+u8mdIeJKp/oQxkGoPZReC/fieJCHshJN0el79cz/EXZcg68P26LTzaMPKGkwzfw3Y6VBaUWYmohTFEBNRgVZTl/NBmlDez0Rq80w2FN2dXJFTj8nvxxH0u2x32+TSkVM5ToKgQkpXGFrN3dzsdlmne4e/sc7FZAG86IvBsLxNAb+WUkK+0duD4V/76fE7IdCita3rToccRZu7gaweOi9JmbJ+Q0xgWPhkdd0z7zdYn35RcUTY2k3zLLTzvtquRxzTUt1YP illtm@dont-panic.local";
+            }
+        }
+        replace: user hyodzis {
+            full-name "Hans Yodzis";
+            uid 2015;
+            class super-user;
+            authentication {
+                ssh-rsa "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC9AN7eYru9qly1C3Fe6MD711DKwS+PX9p/cdUOy9eQeW4MSlYpLrZVWEvhuE6efjxQ7paF3xZbxMte8f1g15/y/W3bQgiuJVPlKcZlI0SCMOuMZDEWsw+pZKnTfqpPz8bn1UJHQKeMPk9lezBXL5KMsEgOevvxJr0YbfdSEuBekakDBDd0quob02UaEflI/4JRSTHh9Vy4y8bUbyVPaniYH9tXrKHCvR4TBB/FKRUNj1f+EjJy2aHkEr+rhqQZS3PKVvjKk67c+XyMP/mCf7dz3uWeqT4RTlGRtFn4C2P6xXLfpNwnbvW9WVd8fqmoPeg1LXi93JjW3EomLgC+bYRv hyodzis@UVic";
+            }
+        }
+        replace: user sfielder {
+            full-name "Sam Fielder";
+            uid 2016;
+            class super-user;
+            authentication {
+                ssh-rsa "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC5ex+9le7HcCOAAMpnWauz4T5ex0PJYx+ME3zh/AsBMeFi44cfKYNKMYuQjqIitQmLyHLFtuRfbsam86+42lOqpM/pR1p/l/KpRDN8r+9EDDRpstN7wsu2qW9ttGsv6OlDhciFiZHZwsyCKZnM8j7H0RKtVpqCcGD/zIh1MtZi1z5B6XhW0FXNTGM0JbKDaK1xUc89rGYSJGZXvjtxVO2xUSgJJcplvzB1PNFyfCGB1lUepV1oOjvtOhSK71iKWCYHJPFE6ZluymLydEDMtCuI3i/X/4JZ9OO9a+stkfIuIQFGQzMHi1L3cWFuxsA4J6+ujqq3dPyUpWRxQZZljiz1 sam@sams-laptop";
+            }
+        }
+    }
+}
+

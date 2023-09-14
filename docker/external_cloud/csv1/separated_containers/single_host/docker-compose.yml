@@ -1,0 +1,27 @@
+version: "3"
+services:
+  condor:
+    build: condor
+    image: condor
+    ports:
+      - 9618:9618
+      - 40000-40500:40000-40500
+#    networks:
+#      - cs_net
+    hostname: htcondor_host
+    privileged: true
+    tty: true
+    stdin_open: true
+
+  cloud_scheduler:
+    build: cloud_scheduler
+    image: cloud_scheduler
+#    networks:
+#      - cs_net
+    hostname: cs_host
+    privileged: true
+    tty: true
+    stdin_open: true
+
+#networks:
+#  cs_net:

@@ -1,0 +1,126 @@
+{
+   "tests" : [
+      {
+         "members" : {
+            "members" : [
+               "ps-bandwidth.lhcmon.triumf.ca",
+               "ps-bandwidth.hepnetcanada.ca",
+               "ps-bandwidth.sfu.westgrid.ca",
+               "ps-bandwidth.scinet.utoronto.ca",
+               "ps-bandwidth.clumeq.mcgill.ca",
+               "ps-bandwidth.atlas.unimelb.edu.au"
+            ],
+            "type" : "mesh"
+         },
+         "parameters" : {
+            "force_bidirectional" : "1",
+            "protocol" : "tcp",
+            "tool" : "bwctl/iperf",
+            "duration" : "20",
+            "type" : "perfsonarbuoy/bwctl",
+            "interval" : "18000"
+         },
+         "description" : "CA Cloud BWCTL Mesh Test"
+      },
+      {
+         "members" : {
+            "members" : [
+               "ps-latency.lhcmon.triumf.ca",
+               "ps-latency.hepnetcanada.ca",
+               "ps-latency.sfu.westgrid.ca",
+               "ps-latency.scinet.utoronto.ca",
+               "ps-latency.clumeq.mcgill.ca",
+               "ps-latency.atlas.unimelb.edu.au"
+            ],
+            "type" : "mesh"
+         },
+         "parameters" : {
+            "force_bidirectional" : "1",
+            "loss_threshold" : "10",
+            "bucket_width" : "0.001",
+            "packet_padding" : "0",
+            "sample_count" : "300",
+            "packet_interval" : "0.1",
+            "type" : "perfsonarbuoy/owamp",
+            "session_count" : "18000"
+         },
+         "description" : "CA Cloud OWAMP Mesh Test"
+      },
+      {
+         "members" : {
+            "a_members" : [
+               "ps-bandwidth.hepnetcanada.ca",
+               "ps-bandwidth.sfu.westgrid.ca",
+               "ps-bandwidth.scinet.utoronto.ca",
+               "ps-bandwidth.clumeq.mcgill.ca",
+               "ps-bandwidth.atlas.unimelb.edu.au"
+            ],
+            "b_members" : [
+               "ps.lhcopn-ps.sara.nl",
+               "perfsonar-ps2.ndgf.org",
+               "perfsonar-ps.cern.ch",
+               "perfsonar-de-kit.gridka.de",
+               "psonar1.fnal.gov",
+               "lhc-bandwidth.twgrid.org",
+               "ps-bandwidth.lhcmon.triumf.ca",
+               "psb01.pic.es",
+               "perfsonar-ps.cnaf.infn.it",
+               "lhcmon.bnl.gov",
+               "perfsonar-ps01.gridpp.rl.ac.uk",
+               "ccperfsonar-lhcopn.in2p3.fr"
+            ],
+            "type" : "disjoint"
+         },
+         "parameters" : {
+            "force_bidirectional" : "1",
+            "protocol" : "tcp",
+            "tool" : "bwctl/iperf",
+            "duration" : "30",
+            "type" : "perfsonarbuoy/bwctl",
+            "interval" : "36000"
+         },
+         "description" : "intercloud BWCTL Mesh Test"
+      },
+      {
+         "members" : {
+            "a_members" : [
+               "ps-latency.hepnetcanada.ca",
+               "ps-latency.sfu.westgrid.ca",
+               "ps-latency.scinet.utoronto.ca",
+               "ps-latency.clumeq.mcgill.ca",
+               "ps-latency.atlas.unimelb.edu.au"
+            ],
+            "b_members" : [
+               "ps.lhcopn-ps.sara.nl",
+               "perfsonar-ps.ndgf.org",
+               "perfsonar-ps2.cern.ch",
+               "perfsonar2-de-kit.gridka.de",
+               "psonar2.fnal.gov",
+               "lhc-latency.twgrid.org",
+               "ps-latency.lhcmon.triumf.ca",
+               "psl01.pic.es",
+               "perfsonar-ow.cnaf.infn.it",
+               "lhcperfmon.bnl.gov",
+               "perfsonar-ps02.gridpp.rl.ac.uk",
+               "ccperfsonar2-lhcopn.in2p3.fr"
+            ],
+            "type" : "disjoint"
+         },
+         "parameters" : {
+            "force_bidirectional" : "1",
+            "loss_threshold" : "10",
+            "bucket_width" : "0.001",
+            "packet_padding" : "0",
+            "sample_count" : "300",
+            "packet_interval" : "0.1",
+            "type" : "perfsonarbuoy/owamp",
+            "session_count" : "18000"
+         },
+         "description" : "intercloud OWAMP Mesh Test"
+      }
+   ],
+   "include" : [
+      "https://grid-deployment.web.cern.ch/grid-deployment/wlcg-ops/perfsonar/conf/central/sitedefs/jsons/sites-ca-all.json",
+      "https://grid-deployment.web.cern.ch/grid-deployment/wlcg-ops/perfsonar/conf/central/sitedefs/jsons/sites-opn-all.json"
+   ]
+}

@@ -1,0 +1,9 @@
+boto
+python-novaclient
+python-keystoneclient
+google-api-python-client
+azure-servicemanagement-legacy
+web.py
+requests
+pathlib2
+libvirt-python

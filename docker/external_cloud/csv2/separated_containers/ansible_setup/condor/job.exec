@@ -1,0 +1,16 @@
+#!/bin/bash                                                                                                                                                                                                                                   
+
+# dd if=/dev/urandom count=1048576 bs=1024 | md5sum                                                                                                                                                                                           
+# curl http://seuster.web.cern.ch/seuster/myip4.php                                                                                                                                                                                           
+echo
+cat /var/lib/cloud_type
+cat /var/lib/cloud_name
+curl -s http://169.254.169.254/latest/meta-data/public-hostname
+
+cat /etc/issue
+r=$(date "+%l%M")
+r=$(expr 1300 - $r)
+sleep $r
+r=$(expr $RANDOM % 60)
+# r=450                                                                                                                                                                                                                                       
+# r=340 

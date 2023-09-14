@@ -1,0 +1,7 @@
+#!/bin/bash
+
+sed -i "s%amqp_server_url = %amqp_server_url = ${1}%" /etc/shoal/shoal_agent.conf
+
+sed -i "s%external_ip = %external_ip = ${2}%" /etc/shoal/shoal_agent.conf
+
+exec shoal-agent

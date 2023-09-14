@@ -1,0 +1,3 @@
+#!/bin/bash
+	./INSTALL-munin
+	./INSTALL-munin-node

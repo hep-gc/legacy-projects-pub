@@ -1,0 +1,113 @@
+\hypertarget{namespaceclient_1_1SpotPriceServiceClient}{\section{client.\-Spot\-Price\-Service\-Client Namespace Reference}
+\label{namespaceclient_1_1SpotPriceServiceClient}\index{client.\-Spot\-Price\-Service\-Client@{client.\-Spot\-Price\-Service\-Client}}
+}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+def \hyperlink{namespaceclient_1_1SpotPriceServiceClient_a18943f91ffee035c1c9389121e6826e3}{get\-\_\-current\-\_\-spot\-\_\-price}
+\item 
+def \hyperlink{namespaceclient_1_1SpotPriceServiceClient_ab557fd36cac03948b987f356e6f9f138}{list\-\_\-all\-\_\-spot\-\_\-price}
+\item 
+def \hyperlink{namespaceclient_1_1SpotPriceServiceClient_a8a726458a637536e068ffd04d0c5f8a6}{get\-\_\-periodic\-\_\-spot\-\_\-price}
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{namespaceclient_1_1SpotPriceServiceClient_a16ba7b1dd49702d3d43bbf98683bb3c0}{string {\bfseries U\-R\-L} = \char`\"{}\char`\"{}}\label{namespaceclient_1_1SpotPriceServiceClient_a16ba7b1dd49702d3d43bbf98683bb3c0}
+
+\item 
+\hypertarget{namespaceclient_1_1SpotPriceServiceClient_a9e31390bc67d0a3884ffac121a131662}{list {\bfseries cmd\-\_\-str} = sys.\-argv\mbox{[}0\mbox{]}}\label{namespaceclient_1_1SpotPriceServiceClient_a9e31390bc67d0a3884ffac121a131662}
+
+\item 
+\hypertarget{namespaceclient_1_1SpotPriceServiceClient_ac9452df76d6c593905b805e888f4b4a2}{tuple {\bfseries config\-\_\-file} = open(cmd\-\_\-str)}\label{namespaceclient_1_1SpotPriceServiceClient_ac9452df76d6c593905b805e888f4b4a2}
+
+\item 
+\hypertarget{namespaceclient_1_1SpotPriceServiceClient_a506318a9f36a26d0e60c8f81a488acf4}{string {\bfseries cfg\-\_\-file} = \char`\"{}\char`\"{}}\label{namespaceclient_1_1SpotPriceServiceClient_a506318a9f36a26d0e60c8f81a488acf4}
+
+\item 
+\hypertarget{namespaceclient_1_1SpotPriceServiceClient_a1e08620c9865d4ebaa4f657c8bf32372}{tuple {\bfseries cfg\-\_\-obj} = json.\-loads(cfg\-\_\-file)}\label{namespaceclient_1_1SpotPriceServiceClient_a1e08620c9865d4ebaa4f657c8bf32372}
+
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+\begin{DoxyVerb}@package ec2_api_tools
+Documentation
+
+Create by rd
+April 2, 2014
+\end{DoxyVerb}
+ 
+
+\subsection{Function Documentation}
+\hypertarget{namespaceclient_1_1SpotPriceServiceClient_a18943f91ffee035c1c9389121e6826e3}{\index{client\-::\-Spot\-Price\-Service\-Client@{client\-::\-Spot\-Price\-Service\-Client}!get\-\_\-current\-\_\-spot\-\_\-price@{get\-\_\-current\-\_\-spot\-\_\-price}}
+\index{get\-\_\-current\-\_\-spot\-\_\-price@{get\-\_\-current\-\_\-spot\-\_\-price}!client::SpotPriceServiceClient@{client\-::\-Spot\-Price\-Service\-Client}}
+\subsubsection[{get\-\_\-current\-\_\-spot\-\_\-price}]{\setlength{\rightskip}{0pt plus 5cm}def client.\-Spot\-Price\-Service\-Client.\-get\-\_\-current\-\_\-spot\-\_\-price (
+\begin{DoxyParamCaption}
+\item[{}]{image\-\_\-type, }
+\item[{}]{instance\-\_\-type, }
+\item[{}]{regions, }
+\item[{}]{zones, }
+\item[{}]{filter\-\_\-type, }
+\item[{}]{response\-\_\-type}
+\end{DoxyParamCaption}
+)}}\label{namespaceclient_1_1SpotPriceServiceClient_a18943f91ffee035c1c9389121e6826e3}
+\begin{DoxyVerb}API function
+image_type $string see help -h 
+instance_type $string see help -h 
+regions @array of strings see help -h 
+zones @array of strings see help -h 
+filter_type $string see help -h 
+response_type $string see help -h 
+\end{DoxyVerb}
+ \hypertarget{namespaceclient_1_1SpotPriceServiceClient_a8a726458a637536e068ffd04d0c5f8a6}{\index{client\-::\-Spot\-Price\-Service\-Client@{client\-::\-Spot\-Price\-Service\-Client}!get\-\_\-periodic\-\_\-spot\-\_\-price@{get\-\_\-periodic\-\_\-spot\-\_\-price}}
+\index{get\-\_\-periodic\-\_\-spot\-\_\-price@{get\-\_\-periodic\-\_\-spot\-\_\-price}!client::SpotPriceServiceClient@{client\-::\-Spot\-Price\-Service\-Client}}
+\subsubsection[{get\-\_\-periodic\-\_\-spot\-\_\-price}]{\setlength{\rightskip}{0pt plus 5cm}def client.\-Spot\-Price\-Service\-Client.\-get\-\_\-periodic\-\_\-spot\-\_\-price (
+\begin{DoxyParamCaption}
+\item[{}]{image\-\_\-type, }
+\item[{}]{instance\-\_\-type, }
+\item[{}]{regions, }
+\item[{}]{zones, }
+\item[{}]{filter\-\_\-type, }
+\item[{}]{response\-\_\-type, }
+\item[{}]{job\-\_\-exec\-\_\-time, }
+\item[{}]{job\-\_\-period\-\_\-time, }
+\item[{}]{job\-\_\-start\-\_\-time, }
+\item[{}]{job\-\_\-stop\-\_\-time}
+\end{DoxyParamCaption}
+)}}\label{namespaceclient_1_1SpotPriceServiceClient_a8a726458a637536e068ffd04d0c5f8a6}
+\begin{DoxyVerb}API function
+image_type $string see help -h 
+instance_type $string see help -h 
+regions @array of strings see help -h 
+zones @array of strings see help -h 
+filter_type $string see help -h 
+response_type $string see help -h 
+job_exec_time integer see help -h
+job_period_time integer see help -h
+job_start_time ISO 9801 DateTime string see help -h
+job_stop_time ISO 9801 DateTime string see help -h
+\end{DoxyVerb}
+ \hypertarget{namespaceclient_1_1SpotPriceServiceClient_ab557fd36cac03948b987f356e6f9f138}{\index{client\-::\-Spot\-Price\-Service\-Client@{client\-::\-Spot\-Price\-Service\-Client}!list\-\_\-all\-\_\-spot\-\_\-price@{list\-\_\-all\-\_\-spot\-\_\-price}}
+\index{list\-\_\-all\-\_\-spot\-\_\-price@{list\-\_\-all\-\_\-spot\-\_\-price}!client::SpotPriceServiceClient@{client\-::\-Spot\-Price\-Service\-Client}}
+\subsubsection[{list\-\_\-all\-\_\-spot\-\_\-price}]{\setlength{\rightskip}{0pt plus 5cm}def client.\-Spot\-Price\-Service\-Client.\-list\-\_\-all\-\_\-spot\-\_\-price (
+\begin{DoxyParamCaption}
+\item[{}]{image\-\_\-type, }
+\item[{}]{instance\-\_\-type, }
+\item[{}]{regions, }
+\item[{}]{zones, }
+\item[{}]{filter\-\_\-type, }
+\item[{}]{response\-\_\-type, }
+\item[{}]{job\-\_\-exe\-\_\-time}
+\end{DoxyParamCaption}
+)}}\label{namespaceclient_1_1SpotPriceServiceClient_ab557fd36cac03948b987f356e6f9f138}
+\begin{DoxyVerb}API function
+image_type $string see help -h 
+instance_type $string see help -h 
+regions @array of strings see help -h 
+zones @array of strings see help -h 
+filter_type $string see help -h 
+response_type $string see help -h 
+job_exe_time integer see help -h
+\end{DoxyVerb}
+ 

@@ -1,0 +1,32 @@
+This is a firefox extension (developed on FF7) that exports certificates from firefox that have been installed into the browswer from cert.gridcanada.ca. 
+Exports a backup PKCS12 (.p12), certificate, and user key. 
+The PKCS12 is encrypted on export and contains both the certificate and user key.
+
+
+Links:
+Firefox SDK Documentation: https://addons.mozilla.org/en-US/developers/docs/sdk/1.1/
+Firefox SDK (Jetpack): https://ftp.mozilla.org/pub/mozilla.org/labs/jetpack/jetpack-sdk-latest.zip
+Github Page: https://github.com/hep-gc/grid-cert-export
+Current Addon Release: https://addons.mozilla.org/en-US/firefox/addon/grid-cert-export/ 
+
+
+How to run this source code:
+-Get the SDK (see above) and unzip
+-From the root directory of unzipped folder (where the README file is): 'source bin/activate'
+-cd into your copy of this source code, run the command 'cfx run'
+
+
+How to install the newest release:
+-Go to the "Current Addon Release" link under the links.
+-Click on Download/Install button.
+-Accept warnings.
+-Read instuctions for use in this document.
+
+
+To export Firefox XPI to distribute:
+-follow instructions from above except run the command 'cfx xpi'
+
+
+How to actually use the extension:
+-Once firefox is running with extension installed (either from xpi or 'cfx run' command) simply click on the key icon on the Firefox Add-On Bar
+-To show the Add-On Bar: 'View'->'Toolbars'->'Add-On Bar' or use Ctrl+/ shortcut

@@ -1,0 +1,68 @@
+#!/usr/bin/perl
+#
+# 	Set command paths.
+#
+	$ENV{'PATH'} = '/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin:/usr/local/sbin';
+
+#
+#       Check that the current directory is where the munin-redis package resides.
+#
+	if (!(-e 'munin/1.4.5/master/lib/Munin/Master/Node.pm')) {
+		print "INSTALL-munin: You need to change directory to where the munin-redis package resides.\n";
+		exit;
+	}
+
+#
+# 	Check for prerequisites.
+#
+	@x = `rpm -qa | grep 'redis'`;
+	if ($#x < 0) {
+		print "INSTALL-munin: You need to install redis.\n";
+		exit;
+	}
+
+	@x = `rpm -qa | grep 'munin-1.4.5'`;
+	if ($#x < 0) {
+		print "INSTALL-munin: You need to install munin-1.4.5.\n";
+		exit;
+	}
+
+#
+# 	Ensure we're running as root.
+#
+        if (`whoami` ne "root\n") {
+			print "INSTALL-munin: MUST be run as user 'root'.\n";
+			exit;
+		}
+
+#
+# 	Find the perl library.
+#
+	@x = `rpm -ql munin | grep 'UpdateWorker.pm'`;
+	if ($#x < 0) {
+		print "INSTALL-munin: Can't locate perl library modules.\n";
+		exit;
+	}
+
+	@y = split(/[\/\n]+/, $x[0]);
+	splice(@y,$#y,1);
+	$libdir = join('/', @y);
+#
+#	Install the files.
+#
+	if (-e "$libdir/Node.pm") {
+		system("cp munin/1.4.5/master/lib/Munin/Master/Node.pm $libdir/Node.pm_redis");
+		if (!(-e "$libdir/Node.pm_original")) {
+			system("mv $libdir/Node.pm $libdir/Node.pm_original");
+			system("ln -s $libdir/Node.pm_redis $libdir/Node.pm");
+		}
+	}
+
+	if (-e "$libdir/UpdateWorker.pm") {
+		system("cp munin/1.4.5/master/lib/Munin/Master/UpdateWorker.pm $libdir/UpdateWorker.pm_redis");
+		if (!(-e "$libdir/UpdateWorker.pm_original")) {
+			system("mv $libdir/UpdateWorker.pm $libdir/UpdateWorker.pm_original");
+			system("ln -s $libdir/UpdateWorker.pm_redis $libdir/UpdateWorker.pm");
+		}
+	}
+
